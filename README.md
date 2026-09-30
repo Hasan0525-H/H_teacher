@@ -18,7 +18,9 @@
 - App name: **المعلم H**
 - Application ID: `com.hasan0525.hteacher`
 - Min SDK: 26
-- Target / Compile SDK: 37
+- Target / Compile SDK: 36
+
+> Application ID ثابت ولا يتم تغييره بعد بدء توزيع التطبيق.
 
 ## القادم
 1. Room Database.

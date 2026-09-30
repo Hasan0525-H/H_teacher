@@ -7,6 +7,7 @@
 4. الحالة عبر ViewModel.
 5. البيانات المحلية هي المصدر الأساسي للحقيقة.
 6. الذكاء الاصطناعي السحابي لاحقًا خلف abstraction ولا يرتبط بمزود واحد.
+7. الاستقرار مقدم على الاعتماد على SDK Preview.
 
 ## المراحل
 - Phase 1: App shell, identity, RTL, UI foundation.
@@ -18,5 +19,10 @@
 
 ## Package
 `com.hasan0525.hteacher`
+
+## Android baseline
+- minSdk 26
+- compileSdk 36
+- targetSdk 36
 
 يجب عدم تغيير Application ID بعد أول إصدار مستخدم.
