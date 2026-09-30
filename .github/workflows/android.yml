@@ -22,12 +22,14 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Accept Android SDK licenses
-        shell: bash
-        run: yes | sdkmanager --licenses >/dev/null || true
-
       - name: Install Android SDK 37
-        run: sdkmanager "platform-tools" "platforms;android-37" "build-tools;36.0.0"
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-37" "build-tools;36.0.0"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
