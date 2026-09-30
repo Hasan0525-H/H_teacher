@@ -2,15 +2,15 @@
 
 ## المبادئ
 1. Offline-first.
-2. كل ميزة مستقلة وقابلة للفصل لاحقًا إلى Gradle module.
-3. واجهة Compose فقط.
-4. الحالة عبر ViewModel.
-5. Room هو المصدر الأساسي لبيانات المجال.
-6. DataStore مخصص للإعدادات الصغيرة فقط.
-7. ملفات PDF تحفظ خارج Room في مساحة التطبيق الداخلية.
-8. لا توجد destructive migrations لبيانات المستخدم.
-9. الذكاء الاصطناعي السحابي لاحقًا خلف abstraction ولا يرتبط بمزود واحد.
-10. الاستقرار مقدم على الاعتماد على SDK Preview.
+2. واجهة Compose فقط.
+3. الحالة عبر ViewModel.
+4. Room هو المصدر الأساسي لبيانات المجال.
+5. DataStore للإعدادات الصغيرة.
+6. ملفات PDF تحفظ في مساحة التطبيق الداخلية.
+7. لا توجد destructive migrations.
+8. PDF export يستخدم Android APIs المدمجة لتقليل الحجم.
+9. الذكاء الاصطناعي السحابي سيبقى خلف abstraction مستقل.
+10. الاستقرار مقدم على SDK Preview.
 
 ## الطبقات
 ```
@@ -18,9 +18,9 @@ UI (Compose)
   ↓
 ViewModel
   ↓
-Repository
+Repository / Engines
   ↓
-Room / DataStore / Internal Files
+Room / DataStore / Internal Files / PdfDocument
 ```
 
 ## قاعدة البيانات v1
@@ -29,10 +29,7 @@ Room / DataStore / Internal Files
 - curricula
 - questions
 
-أي تغيير مستقبلي في schema يجب أن يرفع رقم الإصدار ويضيف Migration صريحًا.
-
-## ملفات المناهج
-التدفق الحالي:
+## المناهج
 ```
 Storage Access Framework
   ↓
@@ -40,23 +37,33 @@ CurriculumFileStore
   ↓
 Internal app files /curricula
   ↓
-Room curriculum metadata
+Room metadata
   ↓
 Android PdfRenderer
 ```
 
-لا نعتمد على URI خارجي لبقاء المنهج؛ يتم إنشاء نسخة داخل التطبيق.
+## مولد الاختبارات
+```
+Question Bank (Room)
+  ↓
+Local Exam Selection Engine
+  ↓
+GeneratedExam
+  ├── UI Preview
+  ├── Questions PDF
+  └── Answers PDF
+```
 
-## Dependency Injection
-في المرحلة الحالية نستخدم `AppContainer` يدويًا بدل Hilt لتقليل الحجم والتعقيد.
+توليد الأسئلة بالذكاء الاصطناعي سيكتب إلى نفس Question Bank، لذلك إضافة AI لاحقًا لا تتطلب إعادة تصميم مولد الاختبارات.
 
 ## المراحل
 - Phase 1: App shell, identity, RTL, UI foundation. ✅
 - Phase 2: Room + DataStore + repositories. ✅
 - Phase 3: Curriculum/PDF management. ✅
-- Phase 4: Exam generator + PDF export.
+- Phase 4: Exam generator + PDF export. ✅ (local question-bank engine)
 - Phase 5: Professional portfolio.
 - Phase 6: Students, attendance, grades, reports.
+- Cloud AI: provider abstraction + protected server gateway.
 
 ## Package
 `com.hasan0525.hteacher`
@@ -65,5 +72,3 @@ Android PdfRenderer
 - minSdk 26
 - compileSdk 36
 - targetSdk 36
-
-يجب عدم تغيير Application ID بعد أول إصدار مستخدم.

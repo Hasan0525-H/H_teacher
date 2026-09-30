@@ -22,13 +22,17 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun HomeRoute(
     onOpenCurricula: () -> Unit,
+    onOpenExams: () -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     HomeScreen(
         state = viewModel.uiState,
         onToolClick = { tool ->
-            if (tool.id == ToolId.CURRICULA && tool.status == ToolStatus.READY) {
-                onOpenCurricula()
+            when {
+                tool.status != ToolStatus.READY -> Unit
+                tool.id == ToolId.CURRICULA -> onOpenCurricula()
+                tool.id == ToolId.EXAMS -> onOpenExams()
+                else -> Unit
             }
         }
     )

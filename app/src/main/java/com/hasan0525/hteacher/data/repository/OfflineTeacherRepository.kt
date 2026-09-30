@@ -66,4 +66,10 @@ class OfflineTeacherRepository(
 
     suspend fun addQuestion(question: QuestionEntity): Long =
         questionDao.insert(question)
+
+    suspend fun updateQuestion(question: QuestionEntity) =
+        questionDao.update(question)
+
+    suspend fun deleteQuestion(question: QuestionEntity) =
+        questionDao.delete(question)
 }

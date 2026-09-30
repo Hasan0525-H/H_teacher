@@ -38,8 +38,8 @@ class HomeViewModel : ViewModel() {
             TeacherTool(
                 id = ToolId.EXAMS,
                 title = "مولد الاختبارات",
-                description = "إنشاء اختبارات ونماذج إجابة",
-                status = ToolStatus.COMING_SOON
+                description = "بنك أسئلة واختبارات PDF",
+                status = ToolStatus.READY
             ),
             TeacherTool(
                 id = ToolId.PORTFOLIO,
