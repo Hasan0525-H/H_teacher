@@ -11,6 +11,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -109,8 +111,11 @@ private fun PortfolioScreen(
                     )
                 },
                 navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("رجوع")
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.Outlined.ArrowBack,
+                            contentDescription = "رجوع"
+                        )
                     }
                 },
                 actions = {
@@ -130,10 +135,7 @@ private fun PortfolioScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(
-                horizontal = 18.dp,
-                vertical = 16.dp
-            ),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             item {
@@ -190,7 +192,7 @@ private fun PortfolioScreen(
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(22.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
@@ -277,7 +279,7 @@ private fun ProfileCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
@@ -343,7 +345,7 @@ private fun PortfolioItemCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(22.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
