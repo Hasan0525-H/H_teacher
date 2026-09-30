@@ -27,8 +27,60 @@ jobs:
       - name: Validate Worker
         run: npm run check
 
+      - name: Resolve Cloudflare account
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          PROVIDED_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN is missing."
+            exit 1
+          fi
+
+          VERIFY_RESPONSE="$(curl -sS             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             -H "Content-Type: application/json"             https://api.cloudflare.com/client/v4/user/tokens/verify)"
+
+          if [ "$(echo "$VERIFY_RESPONSE" | jq -r '.success // false')" != "true" ]; then
+            echo "::error::Cloudflare API token is invalid or inactive."
+            exit 1
+          fi
+
+          ACCOUNTS_RESPONSE="$(curl -sS             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             -H "Content-Type: application/json"             "https://api.cloudflare.com/client/v4/accounts?per_page=50")"
+
+          if [ "$(echo "$ACCOUNTS_RESPONSE" | jq -r '.success // false')" != "true" ]; then
+            echo "::error::The token cannot list Cloudflare accounts. Recreate it using the Edit Cloudflare Workers template for the correct account."
+            exit 1
+          fi
+
+          ACCOUNT_COUNT="$(echo "$ACCOUNTS_RESPONSE" | jq '.result | length')"
+          RESOLVED_ACCOUNT_ID=""
+
+          if [ -n "${PROVIDED_ACCOUNT_ID:-}" ]; then
+            MATCH_COUNT="$(echo "$ACCOUNTS_RESPONSE" | jq --arg id "$PROVIDED_ACCOUNT_ID" '[.result[] | select(.id == $id)] | length')"
+            if [ "$MATCH_COUNT" = "1" ]; then
+              RESOLVED_ACCOUNT_ID="$PROVIDED_ACCOUNT_ID"
+            fi
+          fi
+
+          if [ -z "$RESOLVED_ACCOUNT_ID" ]; then
+            if [ "$ACCOUNT_COUNT" = "1" ]; then
+              RESOLVED_ACCOUNT_ID="$(echo "$ACCOUNTS_RESPONSE" | jq -r '.result[0].id')"
+              echo "Using the single Cloudflare account visible to this token."
+            elif [ "$ACCOUNT_COUNT" = "0" ]; then
+              echo "::error::The token is valid but cannot access any Cloudflare account."
+              exit 1
+            else
+              echo "::error::CLOUDFLARE_ACCOUNT_ID does not match the token and the token can access multiple accounts. Copy the Account ID from Workers & Pages > Account Details."
+              exit 1
+            fi
+          fi
+
+          echo "CLOUDFLARE_ACCOUNT_ID=$RESOLVED_ACCOUNT_ID" >> "$GITHUB_ENV"
+          echo "Cloudflare account resolved successfully."
+
       - name: Deploy Worker
         run: npm run deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
