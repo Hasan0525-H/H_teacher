@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.hasan0525.hteacher.data.local.dao.CurriculumDao
+import com.hasan0525.hteacher.data.local.dao.CurriculumIndexDao
 import com.hasan0525.hteacher.data.local.dao.GradeDao
 import com.hasan0525.hteacher.data.local.dao.PortfolioDao
 import com.hasan0525.hteacher.data.local.dao.QuestionDao
@@ -14,7 +15,9 @@ import com.hasan0525.hteacher.data.local.dao.StudentToolsDao
 import com.hasan0525.hteacher.data.local.dao.SubjectDao
 import com.hasan0525.hteacher.data.local.entity.AttendanceEntity
 import com.hasan0525.hteacher.data.local.entity.CurriculumEntity
+import com.hasan0525.hteacher.data.local.entity.CurriculumUnitEntity
 import com.hasan0525.hteacher.data.local.entity.GradeEntity
+import com.hasan0525.hteacher.data.local.entity.LessonEntity
 import com.hasan0525.hteacher.data.local.entity.GradeRecordEntity
 import com.hasan0525.hteacher.data.local.entity.PortfolioAttachmentEntity
 import com.hasan0525.hteacher.data.local.entity.PortfolioItemEntity
@@ -32,9 +35,11 @@ import com.hasan0525.hteacher.data.local.entity.SubjectEntity
         PortfolioAttachmentEntity::class,
         StudentEntity::class,
         AttendanceEntity::class,
-        GradeRecordEntity::class
+        GradeRecordEntity::class,
+        CurriculumUnitEntity::class,
+        LessonEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class HTeacherDatabase : RoomDatabase() {
@@ -44,6 +49,7 @@ abstract class HTeacherDatabase : RoomDatabase() {
     abstract fun questionDao(): QuestionDao
     abstract fun portfolioDao(): PortfolioDao
     abstract fun studentToolsDao(): StudentToolsDao
+    abstract fun curriculumIndexDao(): CurriculumIndexDao
 
     companion object {
         private const val DATABASE_NAME = "h_teacher.db"
@@ -171,6 +177,54 @@ abstract class HTeacherDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS curriculum_units (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        curriculumId INTEGER NOT NULL,
+                        title TEXT NOT NULL,
+                        sortOrder INTEGER NOT NULL,
+                        FOREIGN KEY(curriculumId)
+                            REFERENCES curricula(id)
+                            ON UPDATE NO ACTION
+                            ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE INDEX IF NOT EXISTS index_curriculum_units_curriculumId
+                    ON curriculum_units(curriculumId)
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS lessons (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        unitId INTEGER NOT NULL,
+                        title TEXT NOT NULL,
+                        pageStart INTEGER,
+                        pageEnd INTEGER,
+                        textContent TEXT NOT NULL,
+                        sortOrder INTEGER NOT NULL,
+                        FOREIGN KEY(unitId)
+                            REFERENCES curriculum_units(id)
+                            ON UPDATE NO ACTION
+                            ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE INDEX IF NOT EXISTS index_lessons_unitId
+                    ON lessons(unitId)
+                    """.trimIndent()
+                )
+            }
+        }
+
         @Volatile
         private var instance: HTeacherDatabase? = null
 
@@ -183,7 +237,8 @@ abstract class HTeacherDatabase : RoomDatabase() {
                 )
                     .addMigrations(
                         MIGRATION_1_2,
-                        MIGRATION_2_3
+                        MIGRATION_2_3,
+                        MIGRATION_3_4
                     )
                     .build()
                     .also { instance = it }

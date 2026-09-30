@@ -7,7 +7,9 @@ import androidx.lifecycle.viewModelScope
 import com.hasan0525.hteacher.HTeacherApplication
 import com.hasan0525.hteacher.data.files.CurriculumFileStore
 import com.hasan0525.hteacher.data.local.entity.CurriculumEntity
+import com.hasan0525.hteacher.data.local.entity.CurriculumUnitEntity
 import com.hasan0525.hteacher.data.local.entity.GradeEntity
+import com.hasan0525.hteacher.data.local.entity.LessonEntity
 import com.hasan0525.hteacher.data.local.entity.SubjectEntity
 import com.hasan0525.hteacher.data.repository.OfflineTeacherRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +22,8 @@ data class CurriculumUiState(
     val subjects: List<SubjectEntity> = emptyList(),
     val grades: List<GradeEntity> = emptyList(),
     val curricula: List<CurriculumEntity> = emptyList(),
+    val units: List<CurriculumUnitEntity> = emptyList(),
+    val lessons: List<LessonEntity> = emptyList(),
     val selectedSubjectId: Long? = null,
     val selectedGradeId: Long? = null,
     val isImporting: Boolean = false,
@@ -72,13 +76,17 @@ class CurriculumViewModel(
 
     val uiState = combine(
         coreState,
+        repository.curriculumUnits,
+        repository.lessons,
         isImporting,
         message
-    ) { core, importing, currentMessage ->
+    ) { core, units, lessons, importing, currentMessage ->
         CurriculumUiState(
             subjects = core.subjects,
             grades = core.grades,
             curricula = core.curricula,
+            units = units,
+            lessons = lessons,
             selectedSubjectId = core.selectedSubjectId,
             selectedGradeId = core.selectedGradeId,
             isImporting = importing,
@@ -211,6 +219,92 @@ class CurriculumViewModel(
 
         repository.deleteCurriculum(curriculum)
         fileStore.delete(curriculum.localFileUri)
+    }
+
+    fun addUnit(curriculumId: Long, title: String) = launchOperation(
+        successMessage = "تمت إضافة الوحدة"
+    ) {
+        require(title.isNotBlank()) { "اكتب اسم الوحدة" }
+        val nextOrder = uiState.value.units
+            .filter { it.curriculumId == curriculumId }
+            .maxOfOrNull { it.sortOrder }
+            ?.plus(1) ?: 0
+        repository.addCurriculumUnit(
+            curriculumId = curriculumId,
+            title = title,
+            sortOrder = nextOrder
+        )
+    }
+
+    fun renameUnit(id: Long, title: String) = launchOperation(
+        successMessage = "تم تعديل الوحدة"
+    ) {
+        require(title.isNotBlank()) { "اكتب اسم الوحدة" }
+        val unit = uiState.value.units.firstOrNull { it.id == id }
+            ?: return@launchOperation
+        repository.updateCurriculumUnit(
+            unit.copy(title = title.trim())
+        )
+    }
+
+    fun deleteUnit(id: Long) = launchOperation(
+        successMessage = "تم حذف الوحدة"
+    ) {
+        val unit = uiState.value.units.firstOrNull { it.id == id }
+            ?: return@launchOperation
+        repository.deleteCurriculumUnit(unit)
+    }
+
+    fun addLesson(
+        unitId: Long,
+        title: String,
+        pageStart: String,
+        pageEnd: String,
+        textContent: String
+    ) = launchOperation(
+        successMessage = "تمت إضافة الدرس"
+    ) {
+        require(title.isNotBlank()) { "اكتب اسم الدرس" }
+        val start = pageStart.toIntOrNull()
+        val end = pageEnd.toIntOrNull()
+        require(start == null || start > 0) { "بداية الصفحات غير صحيحة" }
+        require(end == null || end > 0) { "نهاية الصفحات غير صحيحة" }
+        require(
+            start == null || end == null || end >= start
+        ) { "نهاية الصفحات يجب أن تكون بعد البداية" }
+
+        val nextOrder = uiState.value.lessons
+            .filter { it.unitId == unitId }
+            .maxOfOrNull { it.sortOrder }
+            ?.plus(1) ?: 0
+
+        repository.addLesson(
+            unitId = unitId,
+            title = title,
+            pageStart = start,
+            pageEnd = end,
+            textContent = textContent,
+            sortOrder = nextOrder
+        )
+    }
+
+    fun renameLesson(id: Long, title: String) = launchOperation(
+        successMessage = "تم تعديل الدرس"
+    ) {
+        require(title.isNotBlank()) { "اكتب اسم الدرس" }
+        val lesson = uiState.value.lessons.firstOrNull { it.id == id }
+            ?: return@launchOperation
+        repository.updateLesson(
+            lesson.copy(title = title.trim())
+        )
+    }
+
+    fun deleteLesson(id: Long) = launchOperation(
+        successMessage = "تم حذف الدرس"
+    ) {
+        val lesson = uiState.value.lessons.firstOrNull { it.id == id }
+            ?: return@launchOperation
+        repository.deleteLesson(lesson)
     }
 
     fun clearMessage() {

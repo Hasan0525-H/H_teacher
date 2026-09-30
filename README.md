@@ -16,6 +16,7 @@
 - سجل درجات لكل طالب.
 - حساب متوسط الدرجات.
 - تقرير PDF شامل للطلاب والحضور والدرجات.
+- فهرسة المناهج إلى وحدات ودروس ونطاق صفحات ونصوص.
 - توقيع Debug ثابت.
 - versionCode متزايد تلقائيًا في CI.
 
@@ -23,7 +24,8 @@
 - v1: subjects, grades, curricula, questions.
 - v2: portfolio_items, portfolio_attachments.
 - v3: students, attendance, grade_records.
-- `MIGRATION_1_2` و`MIGRATION_2_3` صريحان.
+- v4: curriculum_units, lessons.
+- `MIGRATION_1_2` و`MIGRATION_2_3` و`MIGRATION_3_4` صريحة.
 - لا يوجد `fallbackToDestructiveMigration`.
 
 ## الهوية
@@ -33,6 +35,6 @@
 - compileSdk / targetSdk 36
 
 ## المتبقي
-1. فهرسة نصوص المناهج إلى وحدات ودروس.
-2. Cloud AI متعدد المزودات خلف بوابة آمنة.
+1. Cloud AI متعدد المزودات خلف بوابة آمنة.
+2. ربط AI بفهرسة المناهج وبنك الأسئلة.
 3. تحسينات UI واختبارات وترقية Release signing.

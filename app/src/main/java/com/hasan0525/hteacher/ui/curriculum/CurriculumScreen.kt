@@ -41,6 +41,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hasan0525.hteacher.HTeacherApplication
 import com.hasan0525.hteacher.data.local.entity.CurriculumEntity
+import com.hasan0525.hteacher.data.local.entity.CurriculumUnitEntity
+import com.hasan0525.hteacher.data.local.entity.LessonEntity
 
 @Composable
 fun CurriculumRoute(
@@ -69,6 +71,12 @@ fun CurriculumRoute(
         onImportPdf = viewModel::importPdf,
         onRenameCurriculum = viewModel::renameCurriculum,
         onDeleteCurriculum = viewModel::deleteCurriculum,
+        onAddUnit = viewModel::addUnit,
+        onRenameUnit = viewModel::renameUnit,
+        onDeleteUnit = viewModel::deleteUnit,
+        onAddLesson = viewModel::addLesson,
+        onRenameLesson = viewModel::renameLesson,
+        onDeleteLesson = viewModel::deleteLesson,
         onMessageShown = viewModel::clearMessage
     )
 }
@@ -90,12 +98,19 @@ private fun CurriculumScreen(
     onImportPdf: (Uri) -> Unit,
     onRenameCurriculum: (Long, String) -> Unit,
     onDeleteCurriculum: (Long) -> Unit,
+    onAddUnit: (Long, String) -> Unit,
+    onRenameUnit: (Long, String) -> Unit,
+    onDeleteUnit: (Long) -> Unit,
+    onAddLesson: (Long, String, String, String, String) -> Unit,
+    onRenameLesson: (Long, String) -> Unit,
+    onDeleteLesson: (Long) -> Unit,
     onMessageShown: () -> Unit
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     var showSubjectManager by remember { mutableStateOf(false) }
     var showGradeManager by remember { mutableStateOf(false) }
     var editingCurriculum by remember { mutableStateOf<CurriculumEntity?>(null) }
+    var indexingCurriculum by remember { mutableStateOf<CurriculumEntity?>(null) }
 
     val pdfPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -233,6 +248,9 @@ private fun CurriculumScreen(
                         onRename = {
                             editingCurriculum = curriculum
                         },
+                        onIndex = {
+                            indexingCurriculum = curriculum
+                        },
                         onDelete = {
                             onDeleteCurriculum(curriculum.id)
                         }
@@ -263,6 +281,23 @@ private fun CurriculumScreen(
             onAdd = onAddGrade,
             onRename = onRenameGrade,
             onDelete = onDeleteGrade
+        )
+    }
+
+    indexingCurriculum?.let { curriculum ->
+        CurriculumIndexDialog(
+            curriculum = curriculum,
+            units = state.units.filter {
+                it.curriculumId == curriculum.id
+            },
+            lessons = state.lessons,
+            onDismiss = { indexingCurriculum = null },
+            onAddUnit = onAddUnit,
+            onRenameUnit = onRenameUnit,
+            onDeleteUnit = onDeleteUnit,
+            onAddLesson = onAddLesson,
+            onRenameLesson = onRenameLesson,
+            onDeleteLesson = onDeleteLesson
         )
     }
 
@@ -333,6 +368,7 @@ private fun CurriculumCard(
     curriculum: CurriculumEntity,
     onOpen: () -> Unit,
     onRename: () -> Unit,
+    onIndex: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
@@ -365,12 +401,27 @@ private fun CurriculumCard(
 
                 OutlinedButton(
                     modifier = Modifier.weight(1f),
+                    onClick = onIndex
+                ) {
+                    Text("فهرسة")
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    modifier = Modifier.weight(1f),
                     onClick = onRename
                 ) {
-                    Text("تعديل")
+                    Text("تعديل الاسم")
                 }
 
-                TextButton(onClick = onDelete) {
+                TextButton(
+                    modifier = Modifier.weight(1f),
+                    onClick = onDelete
+                ) {
                     Text("حذف")
                 }
             }
@@ -505,6 +556,293 @@ private fun NameEditorDialog(
             TextButton(
                 enabled = value.isNotBlank(),
                 onClick = { onConfirm(value) }
+            ) {
+                Text("حفظ")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("إلغاء")
+            }
+        }
+    )
+}
+
+
+@Composable
+private fun CurriculumIndexDialog(
+    curriculum: CurriculumEntity,
+    units: List<CurriculumUnitEntity>,
+    lessons: List<LessonEntity>,
+    onDismiss: () -> Unit,
+    onAddUnit: (Long, String) -> Unit,
+    onRenameUnit: (Long, String) -> Unit,
+    onDeleteUnit: (Long) -> Unit,
+    onAddLesson: (Long, String, String, String, String) -> Unit,
+    onRenameLesson: (Long, String) -> Unit,
+    onDeleteLesson: (Long) -> Unit
+) {
+    var newUnit by remember { mutableStateOf("") }
+    var editingUnit by remember {
+        mutableStateOf<CurriculumUnitEntity?>(null)
+    }
+    var lessonUnit by remember {
+        mutableStateOf<CurriculumUnitEntity?>(null)
+    }
+    var editingLesson by remember {
+        mutableStateOf<LessonEntity?>(null)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("فهرسة " + curriculum.title)
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 560.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = newUnit,
+                    onValueChange = { newUnit = it },
+                    singleLine = true,
+                    label = { Text("اسم الوحدة") }
+                )
+
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = newUnit.isNotBlank(),
+                    onClick = {
+                        onAddUnit(curriculum.id, newUnit)
+                        newUnit = ""
+                    }
+                ) {
+                    Text("إضافة وحدة")
+                }
+
+                if (units.isEmpty()) {
+                    Text(
+                        text = "لم تتم فهرسة وحدات لهذا المنهج بعد.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                units.sortedBy { it.sortOrder }.forEach { unit ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = unit.title,
+                                    modifier = Modifier.weight(1f),
+                                    fontWeight = FontWeight.Bold
+                                )
+                                TextButton(
+                                    onClick = { editingUnit = unit }
+                                ) {
+                                    Text("تعديل")
+                                }
+                                TextButton(
+                                    onClick = { onDeleteUnit(unit.id) }
+                                ) {
+                                    Text("حذف")
+                                }
+                            }
+
+                            val unitLessons = lessons
+                                .filter { it.unitId == unit.id }
+                                .sortedBy { it.sortOrder }
+
+                            unitLessons.forEach { lesson ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(lesson.title)
+                                        val range = when {
+                                            lesson.pageStart != null &&
+                                                lesson.pageEnd != null ->
+                                                "ص " + lesson.pageStart +
+                                                    " - " + lesson.pageEnd
+                                            lesson.pageStart != null ->
+                                                "ص " + lesson.pageStart
+                                            else -> ""
+                                        }
+                                        if (range.isNotBlank()) {
+                                            Text(
+                                                text = range,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    TextButton(
+                                        onClick = {
+                                            editingLesson = lesson
+                                        }
+                                    ) {
+                                        Text("تعديل")
+                                    }
+                                    TextButton(
+                                        onClick = {
+                                            onDeleteLesson(lesson.id)
+                                        }
+                                    ) {
+                                        Text("حذف")
+                                    }
+                                }
+                            }
+
+                            OutlinedButton(
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = { lessonUnit = unit }
+                            ) {
+                                Text("إضافة درس")
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("تم")
+            }
+        }
+    )
+
+    editingUnit?.let { unit ->
+        NameEditorDialog(
+            title = "تعديل اسم الوحدة",
+            initialValue = unit.title,
+            onDismiss = { editingUnit = null },
+            onConfirm = { value ->
+                onRenameUnit(unit.id, value)
+                editingUnit = null
+            }
+        )
+    }
+
+    editingLesson?.let { lesson ->
+        NameEditorDialog(
+            title = "تعديل اسم الدرس",
+            initialValue = lesson.title,
+            onDismiss = { editingLesson = null },
+            onConfirm = { value ->
+                onRenameLesson(lesson.id, value)
+                editingLesson = null
+            }
+        )
+    }
+
+    lessonUnit?.let { unit ->
+        AddLessonDialog(
+            unitTitle = unit.title,
+            onDismiss = { lessonUnit = null },
+            onSave = { title, start, end, text ->
+                onAddLesson(
+                    unit.id,
+                    title,
+                    start,
+                    end,
+                    text
+                )
+                lessonUnit = null
+            }
+        )
+    }
+}
+
+@Composable
+private fun AddLessonDialog(
+    unitTitle: String,
+    onDismiss: () -> Unit,
+    onSave: (String, String, String, String) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var pageStart by remember { mutableStateOf("") }
+    var pageEnd by remember { mutableStateOf("") }
+    var textContent by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("إضافة درس إلى " + unitTitle)
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 500.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("اسم الدرس") }
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        modifier = Modifier.weight(1f),
+                        value = pageStart,
+                        onValueChange = {
+                            pageStart = it.filter(Char::isDigit).take(5)
+                        },
+                        label = { Text("من صفحة") }
+                    )
+                    OutlinedTextField(
+                        modifier = Modifier.weight(1f),
+                        value = pageEnd,
+                        onValueChange = {
+                            pageEnd = it.filter(Char::isDigit).take(5)
+                        },
+                        label = { Text("إلى صفحة") }
+                    )
+                }
+
+                OutlinedTextField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 120.dp),
+                    value = textContent,
+                    onValueChange = { textContent = it },
+                    label = {
+                        Text("نص الدرس - اختياري")
+                    }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = title.isNotBlank(),
+                onClick = {
+                    onSave(
+                        title,
+                        pageStart,
+                        pageEnd,
+                        textContent
+                    )
+                }
             ) {
                 Text("حفظ")
             }

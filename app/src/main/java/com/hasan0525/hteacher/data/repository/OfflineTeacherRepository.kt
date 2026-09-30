@@ -1,6 +1,7 @@
 package com.hasan0525.hteacher.data.repository
 
 import com.hasan0525.hteacher.data.local.dao.CurriculumDao
+import com.hasan0525.hteacher.data.local.dao.CurriculumIndexDao
 import com.hasan0525.hteacher.data.local.dao.GradeDao
 import com.hasan0525.hteacher.data.local.dao.PortfolioDao
 import com.hasan0525.hteacher.data.local.dao.QuestionDao
@@ -8,7 +9,9 @@ import com.hasan0525.hteacher.data.local.dao.StudentToolsDao
 import com.hasan0525.hteacher.data.local.dao.SubjectDao
 import com.hasan0525.hteacher.data.local.entity.AttendanceEntity
 import com.hasan0525.hteacher.data.local.entity.CurriculumEntity
+import com.hasan0525.hteacher.data.local.entity.CurriculumUnitEntity
 import com.hasan0525.hteacher.data.local.entity.GradeEntity
+import com.hasan0525.hteacher.data.local.entity.LessonEntity
 import com.hasan0525.hteacher.data.local.entity.GradeRecordEntity
 import com.hasan0525.hteacher.data.local.entity.PortfolioAttachmentEntity
 import com.hasan0525.hteacher.data.local.entity.PortfolioItemEntity
@@ -23,7 +26,8 @@ class OfflineTeacherRepository(
     private val curriculumDao: CurriculumDao,
     private val questionDao: QuestionDao,
     private val portfolioDao: PortfolioDao,
-    private val studentToolsDao: StudentToolsDao
+    private val studentToolsDao: StudentToolsDao,
+    private val curriculumIndexDao: CurriculumIndexDao
 ) {
     val subjects: Flow<List<SubjectEntity>> = subjectDao.observeAll()
     val grades: Flow<List<GradeEntity>> = gradeDao.observeAll()
@@ -36,6 +40,10 @@ class OfflineTeacherRepository(
     val attendance: Flow<List<AttendanceEntity>> = studentToolsDao.observeAttendance()
     val gradeRecords: Flow<List<GradeRecordEntity>> =
         studentToolsDao.observeGradeRecords()
+    val curriculumUnits: Flow<List<CurriculumUnitEntity>> =
+        curriculumIndexDao.observeUnits()
+    val lessons: Flow<List<LessonEntity>> =
+        curriculumIndexDao.observeLessons()
 
     suspend fun addSubject(name: String): Long =
         subjectDao.insert(SubjectEntity(name = name.trim()))
@@ -123,4 +131,46 @@ class OfflineTeacherRepository(
 
     suspend fun deleteGradeRecord(record: GradeRecordEntity) =
         studentToolsDao.deleteGradeRecord(record)
+
+    suspend fun addCurriculumUnit(
+        curriculumId: Long,
+        title: String,
+        sortOrder: Int
+    ): Long = curriculumIndexDao.insertUnit(
+        CurriculumUnitEntity(
+            curriculumId = curriculumId,
+            title = title.trim(),
+            sortOrder = sortOrder
+        )
+    )
+
+    suspend fun updateCurriculumUnit(unit: CurriculumUnitEntity) =
+        curriculumIndexDao.updateUnit(unit)
+
+    suspend fun deleteCurriculumUnit(unit: CurriculumUnitEntity) =
+        curriculumIndexDao.deleteUnit(unit)
+
+    suspend fun addLesson(
+        unitId: Long,
+        title: String,
+        pageStart: Int?,
+        pageEnd: Int?,
+        textContent: String,
+        sortOrder: Int
+    ): Long = curriculumIndexDao.insertLesson(
+        LessonEntity(
+            unitId = unitId,
+            title = title.trim(),
+            pageStart = pageStart,
+            pageEnd = pageEnd,
+            textContent = textContent.trim(),
+            sortOrder = sortOrder
+        )
+    )
+
+    suspend fun updateLesson(lesson: LessonEntity) =
+        curriculumIndexDao.updateLesson(lesson)
+
+    suspend fun deleteLesson(lesson: LessonEntity) =
+        curriculumIndexDao.deleteLesson(lesson)
 }
