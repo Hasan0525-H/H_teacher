@@ -14,6 +14,7 @@ interface Env {
   AI?: WorkersAiBinding;
 
   PROVIDER_ORDER?: string;
+  PROVIDER_TIMEOUT_MS?: string;
 
   CF_AI_MODEL?: string;
 
@@ -126,14 +127,22 @@ export default {
       .filter(Boolean);
 
     const failures: string[] = [];
+    const providerTimeoutMs = clamp(
+      Number(env.PROVIDER_TIMEOUT_MS || "18000"),
+      5_000,
+      45_000
+    );
 
     for (const provider of providers) {
       try {
-        const result = await callProvider(
-          provider,
-          prompt,
-          maxOutputTokens,
-          env
+        const result = await withTimeout(
+          callProvider(
+            provider,
+            prompt,
+            maxOutputTokens,
+            env
+          ),
+          providerTimeoutMs
         );
 
         if (result) {
@@ -410,6 +419,28 @@ function clamp(
     min,
     Math.min(max, Math.floor(value))
   );
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error("provider_timeout")),
+      timeoutMs
+    );
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+    }
+  }
 }
 
 function safeErrorName(error: unknown): string {

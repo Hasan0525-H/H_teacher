@@ -17,6 +17,13 @@ Cloudflare Worker وسيط بين تطبيق المعلم H ومزودات ال�
 4. OpenRouter
 
 أي مزود لا يملك model/key مضبوطًا يتم تخطيه تلقائيًا.
+إذا تجاوز المزود 18 ثانية ينتقل النظام تلقائيًا إلى المزود التالي.
+
+النماذج الافتراضية الحالية:
+- Workers AI: `@cf/zai-org/glm-4.7-flash`
+- Gemini: `gemini-3.8-flash`
+
+يمكن تغيير أسماء النماذج من إعدادات Worker دون تحديث APK.
 
 ## الإعداد
 
@@ -33,11 +40,17 @@ npx wrangler secret put GROQ_API_KEY
 npx wrangler secret put OPENROUTER_API_KEY
 ```
 
-اضبط أسماء النماذج كمتغيرات بيئة في Cloudflare:
-- `CF_AI_MODEL`
-- `GEMINI_MODEL`
+Workers AI وGemini لهما أسماء افتراضية في `wrangler.jsonc`.
+لـ Groq وOpenRouter اضبط فقط اسم النموذج إذا أردت تفعيلهما:
 - `GROQ_MODEL`
 - `OPENROUTER_MODEL`
+
+ويمكن تغيير:
+- `PROVIDER_ORDER`
+- `PROVIDER_TIMEOUT_MS`
+- `CF_AI_MODEL`
+- `GEMINI_MODEL`
+بدون أي تعديل في تطبيق Android.
 
 ثم:
 
