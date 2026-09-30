@@ -4,19 +4,43 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+val ciRunNumber = System.getenv("GITHUB_RUN_NUMBER")
+    ?.toIntOrNull()
+    ?: 0
+
+val developmentVersionCode = 1000 + ciRunNumber
+val developmentVersionName = if (ciRunNumber > 0) {
+    "0.1.0-dev." + ciRunNumber
+} else {
+    "0.1.0-dev"
+}
+
 android {
     namespace = "com.hasan0525.hteacher"
     compileSdk = 36
+
+    signingConfigs {
+        create("development") {
+            storeFile = rootProject.file("keystore/hteacher-debug.jks")
+            storePassword = "android"
+            keyAlias = "hteacherdebug"
+            keyPassword = "android"
+        }
+    }
 
     defaultConfig {
         applicationId = "com.hasan0525.hteacher"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = developmentVersionCode
+        versionName = developmentVersionName
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("development")
+        }
+
         release {
             isMinifyEnabled = true
             isShrinkResources = true

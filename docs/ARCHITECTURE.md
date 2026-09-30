@@ -54,13 +54,21 @@ GeneratedExam
   └── Answers PDF
 ```
 
+## التوقيع والإصدارات
+- Package ثابت: `com.hasan0525.hteacher`.
+- Debug يستخدم مفتاح تطوير ثابت في `keystore/hteacher-debug.jks` لتسهيل التحديث فوق نسخ الاختبار.
+- مفتاح التطوير ليس مفتاح Release.
+- Release النهائي يجب أن يستخدم مفتاحًا دائمًا محفوظًا خارج GitHub وممررًا عبر Secrets.
+- CI يشتق versionCode من `1000 + GITHUB_RUN_NUMBER` ليكون متزايدًا بين builds.
+- أي جهاز ثبت APK أقدم قبل اعتماد المفتاح الثابت يحتاج إعادة تثبيت لمرة واحدة فقط.
+
 توليد الأسئلة بالذكاء الاصطناعي سيكتب إلى نفس Question Bank، لذلك إضافة AI لاحقًا لا تتطلب إعادة تصميم مولد الاختبارات.
 
 ## المراحل
 - Phase 1: App shell, identity, RTL, UI foundation. ✅
 - Phase 2: Room + DataStore + repositories. ✅
 - Phase 3: Curriculum/PDF management. ✅
-- Phase 4: Exam generator + PDF export. ✅ (local question-bank engine)
+- Phase 4: Exam generator + PDF export. ✅
 - Phase 5: Professional portfolio.
 - Phase 6: Students, attendance, grades, reports.
 - Cloud AI: provider abstraction + protected server gateway.
