@@ -18,11 +18,13 @@ import com.hasan0525.hteacher.ui.home.HomeRoute
 import com.hasan0525.hteacher.ui.pdf.PdfViewerScreen
 import com.hasan0525.hteacher.ui.portfolio.PortfolioRoute
 import com.hasan0525.hteacher.ui.theme.HTeacherTheme
+import com.hasan0525.hteacher.ui.tools.TeacherToolsRoute
 
 private const val ROUTE_HOME = "home"
 private const val ROUTE_CURRICULA = "curricula"
 private const val ROUTE_EXAMS = "exams"
 private const val ROUTE_PORTFOLIO = "portfolio"
+private const val ROUTE_TOOLS = "tools"
 private const val ROUTE_PDF = "pdf"
 
 class MainActivity : ComponentActivity() {
@@ -63,6 +65,10 @@ class MainActivity : ComponentActivity() {
                             onBack = { route = ROUTE_HOME }
                         )
 
+                        ROUTE_TOOLS -> TeacherToolsRoute(
+                            onBack = { route = ROUTE_HOME }
+                        )
+
                         ROUTE_PDF -> PdfViewerScreen(
                             filePath = pdfPath,
                             title = pdfTitle,
@@ -78,6 +84,9 @@ class MainActivity : ComponentActivity() {
                             },
                             onOpenPortfolio = {
                                 route = ROUTE_PORTFOLIO
+                            },
+                            onOpenTools = {
+                                route = ROUTE_TOOLS
                             }
                         )
                     }

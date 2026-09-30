@@ -24,6 +24,7 @@ fun HomeRoute(
     onOpenCurricula: () -> Unit,
     onOpenExams: () -> Unit,
     onOpenPortfolio: () -> Unit,
+    onOpenTools: () -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     HomeScreen(
@@ -34,7 +35,7 @@ fun HomeRoute(
                 tool.id == ToolId.CURRICULA -> onOpenCurricula()
                 tool.id == ToolId.EXAMS -> onOpenExams()
                 tool.id == ToolId.PORTFOLIO -> onOpenPortfolio()
-                else -> Unit
+                tool.id == ToolId.MORE -> onOpenTools()
             }
         }
     )

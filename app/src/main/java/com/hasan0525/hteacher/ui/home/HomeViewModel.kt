@@ -50,8 +50,8 @@ class HomeViewModel : ViewModel() {
             TeacherTool(
                 id = ToolId.MORE,
                 title = "أدوات المعلم",
-                description = "أدوات إضافية ستضاف تدريجيًا",
-                status = ToolStatus.COMING_SOON
+                description = "طلاب وحضور ودرجات وتقارير",
+                status = ToolStatus.READY
             )
         )
     )

@@ -13,7 +13,8 @@ class AppContainer(context: Context) {
         gradeDao = database.gradeDao(),
         curriculumDao = database.curriculumDao(),
         questionDao = database.questionDao(),
-        portfolioDao = database.portfolioDao()
+        portfolioDao = database.portfolioDao(),
+        studentToolsDao = database.studentToolsDao()
     )
 
     val settingsRepository = AppSettingsRepository(context)
