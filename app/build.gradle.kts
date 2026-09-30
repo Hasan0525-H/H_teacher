@@ -15,11 +15,12 @@ val developmentVersionName = if (ciRunNumber > 0) {
     "0.1.0-dev"
 }
 
-val aiGatewayUrl = System.getenv("AI_GATEWAY_URL")
+val aiGatewayUrl = (System.getenv("AI_GATEWAY_URL")
     ?.trim()
-    ?.replace("\\", "\\\\")
-    ?.replace("\"", "\\\"")
-    .orEmpty()
+    ?.takeIf { it.isNotBlank() }
+    ?: "https://hteacher-ai-gateway.kd-alsalhi.workers.dev")
+    .replace("\\", "\\\\")
+    .replace("\"", "\\\"")
 
 android {
     namespace = "com.hasan0525.hteacher"
