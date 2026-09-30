@@ -5,8 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.hasan0525.hteacher.HTeacherApplication
+import com.hasan0525.hteacher.data.ai.AiExamQuestionRequest
+import com.hasan0525.hteacher.data.ai.AiQuestionService
 import com.hasan0525.hteacher.data.local.entity.CurriculumEntity
+import com.hasan0525.hteacher.data.local.entity.CurriculumUnitEntity
 import com.hasan0525.hteacher.data.local.entity.QuestionEntity
+import com.hasan0525.hteacher.data.local.entity.LessonEntity
 import com.hasan0525.hteacher.data.local.entity.SubjectEntity
 import com.hasan0525.hteacher.data.pdf.PdfExamExporter
 import com.hasan0525.hteacher.data.repository.OfflineTeacherRepository
@@ -43,6 +47,9 @@ data class ExamGeneratorUiState(
     val title: String = "اختبار",
     val generatedExam: GeneratedExam? = null,
     val isExporting: Boolean = false,
+    val isAiGenerating: Boolean = false,
+    val aiConfigured: Boolean = false,
+    val indexedLessonCount: Int = 0,
     val message: String? = null
 )
 
@@ -55,14 +62,56 @@ private data class ExamCoreState(
     val effectiveCurriculumId: Long?
 )
 
+private data class CurriculumIndexState(
+    val units: List<CurriculumUnitEntity> = emptyList(),
+    val lessons: List<LessonEntity> = emptyList()
+)
+
+private data class ExamAuxState(
+    val generatedExam: GeneratedExam?,
+    val isExporting: Boolean,
+    val isAiGenerating: Boolean,
+    val message: String?
+)
+
 class ExamGeneratorViewModel(
     private val repository: OfflineTeacherRepository,
-    private val exporter: PdfExamExporter
+    private val exporter: PdfExamExporter,
+    private val aiQuestionService: AiQuestionService
 ) : ViewModel() {
     private val config = MutableStateFlow(ExamConfig())
     private val generatedExam = MutableStateFlow<GeneratedExam?>(null)
     private val isExporting = MutableStateFlow(false)
+    private val isAiGenerating = MutableStateFlow(false)
     private val message = MutableStateFlow<String?>(null)
+
+    private val indexState = combine(
+        repository.curriculumUnits,
+        repository.lessons
+    ) { units, lessons ->
+        CurriculumIndexState(
+            units = units,
+            lessons = lessons
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = CurriculumIndexState()
+    )
+
+    private val auxState = combine(
+        generatedExam,
+        isExporting,
+        isAiGenerating,
+        message
+    ) { exam, exporting, aiGenerating, currentMessage ->
+        ExamAuxState(
+            generatedExam = exam,
+            isExporting = exporting,
+            isAiGenerating = aiGenerating,
+            message = currentMessage
+        )
+    }
 
     private val coreState = combine(
         repository.subjects,
@@ -102,24 +151,36 @@ class ExamGeneratorViewModel(
 
     val uiState = combine(
         coreState,
-        generatedExam,
-        isExporting,
-        message
-    ) { core, exam, exporting, currentMessage ->
+        indexState,
+        auxState
+    ) { core, index, aux ->
+        val selectedCurriculumId = core.effectiveCurriculumId
+        val unitIds = index.units
+            .filter { it.curriculumId == selectedCurriculumId }
+            .map { it.id }
+            .toSet()
+
+        val indexedLessonCount = index.lessons.count {
+            it.unitId in unitIds && it.textContent.isNotBlank()
+        }
+
         ExamGeneratorUiState(
             subjects = core.subjects,
             curricula = core.curricula,
             questions = core.questions,
             selectedSubjectId = core.effectiveSubjectId,
-            selectedCurriculumId = core.effectiveCurriculumId,
+            selectedCurriculumId = selectedCurriculumId,
             selectedTypes = core.config.selectedTypes,
             selectedDifficulty = core.config.selectedDifficulty,
             questionCount = core.config.questionCount,
             totalMarks = core.config.totalMarks,
             title = core.config.title,
-            generatedExam = exam,
-            isExporting = exporting,
-            message = currentMessage
+            generatedExam = aux.generatedExam,
+            isExporting = aux.isExporting,
+            isAiGenerating = aux.isAiGenerating,
+            aiConfigured = aiQuestionService.isConfigured,
+            indexedLessonCount = indexedLessonCount,
+            message = aux.message
         )
     }.stateIn(
         scope = viewModelScope,
@@ -301,6 +362,115 @@ class ExamGeneratorViewModel(
         }
     }
 
+    fun generateAiQuestions() {
+        val state = uiState.value
+        val subject = state.subjects.firstOrNull {
+            it.id == state.selectedSubjectId
+        }
+        val curriculum = state.curricula.firstOrNull {
+            it.id == state.selectedCurriculumId
+        }
+
+        if (!aiQuestionService.isConfigured) {
+            message.value = "بوابة الذكاء الاصطناعي غير مفعلة في هذا البناء"
+            return
+        }
+
+        if (subject == null || curriculum == null) {
+            message.value = "اختر مادة ومنهجًا محددًا أولًا"
+            return
+        }
+
+        val requestedCount = state.questionCount.toIntOrNull()
+        if (requestedCount == null || requestedCount !in 1..30) {
+            message.value = "لتوليد AI اختر من 1 إلى 30 سؤالًا"
+            return
+        }
+
+        val index = indexState.value
+        val units = index.units.filter {
+            it.curriculumId == curriculum.id
+        }
+        val unitById = units.associateBy { it.id }
+        val unitIds = unitById.keys
+
+        val indexedLessons = index.lessons
+            .filter {
+                it.unitId in unitIds &&
+                    it.textContent.isNotBlank()
+            }
+            .sortedWith(
+                compareBy<LessonEntity>(
+                    { unitById[it.unitId]?.sortOrder ?: 0 },
+                    { it.sortOrder }
+                )
+            )
+
+        if (indexedLessons.isEmpty()) {
+            message.value = "أضف نص الدروس من فهرسة المنهج أولًا"
+            return
+        }
+
+        val lessonContext = indexedLessons.joinToString(
+            separator = "\n\n"
+        ) { lesson ->
+            val unitTitle = unitById[lesson.unitId]?.title.orEmpty()
+            buildString {
+                append("الوحدة: ")
+                append(unitTitle)
+                append("\nالدرس: ")
+                append(lesson.title)
+                append("\n")
+                append(lesson.textContent)
+            }
+        }.take(50_000)
+
+        viewModelScope.launch {
+            isAiGenerating.value = true
+            try {
+                val generated = aiQuestionService.generateQuestions(
+                    AiExamQuestionRequest(
+                        subjectName = subject.name,
+                        curriculumTitle = curriculum.title,
+                        lessonContext = lessonContext,
+                        count = requestedCount,
+                        types = state.selectedTypes.map {
+                            it.storageKey
+                        },
+                        difficulty = state.selectedDifficulty
+                            ?.storageKey
+                            ?: "mixed"
+                    )
+                )
+
+                generated.forEach { item ->
+                    repository.addQuestion(
+                        QuestionEntity(
+                            subjectId = subject.id,
+                            curriculumId = curriculum.id,
+                            questionType = item.type,
+                            difficulty = item.difficulty,
+                            questionText = item.question,
+                            answerText = item.answer
+                                .trim()
+                                .ifBlank { null }
+                        )
+                    )
+                }
+
+                generatedExam.value = null
+                message.value = "تمت إضافة " +
+                    generated.size +
+                    " سؤالًا من AI إلى بنك الأسئلة"
+            } catch (error: Throwable) {
+                message.value = error.message
+                    ?: "تعذر توليد الأسئلة بالذكاء الاصطناعي"
+            } finally {
+                isAiGenerating.value = false
+            }
+        }
+    }
+
     fun exportExam(
         uri: Uri,
         includeAnswers: Boolean
@@ -390,7 +560,8 @@ class ExamGeneratorViewModelFactory(
         if (modelClass.isAssignableFrom(ExamGeneratorViewModel::class.java)) {
             return ExamGeneratorViewModel(
                 repository = application.container.teacherRepository,
-                exporter = PdfExamExporter(application)
+                exporter = PdfExamExporter(application),
+                aiQuestionService = application.container.aiQuestionService
             ) as T
         }
 

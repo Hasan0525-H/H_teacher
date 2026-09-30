@@ -6,7 +6,9 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 
 private val Context.settingsDataStore by preferencesDataStore(
     name = "teacher_settings"
@@ -29,6 +31,7 @@ class AppSettingsRepository(
         val Specialization = stringPreferencesKey("specialization")
         val JobTitle = stringPreferencesKey("job_title")
         val UseDarkTheme = booleanPreferencesKey("use_dark_theme")
+        val InstallId = stringPreferencesKey("install_id")
     }
 
     val settings: Flow<AppSettings> = context.settingsDataStore.data.map { preferences ->
@@ -59,5 +62,20 @@ class AppSettingsRepository(
         context.settingsDataStore.edit { preferences ->
             preferences[Keys.UseDarkTheme] = enabled
         }
+    }
+
+    suspend fun getOrCreateInstallId(): String {
+        val existing = context.settingsDataStore.data
+            .first()[Keys.InstallId]
+            ?.trim()
+            .orEmpty()
+
+        if (existing.isNotEmpty()) return existing
+
+        val created = UUID.randomUUID().toString()
+        context.settingsDataStore.edit { preferences ->
+            preferences[Keys.InstallId] = created
+        }
+        return created
     }
 }

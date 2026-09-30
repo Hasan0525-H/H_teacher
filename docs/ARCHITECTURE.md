@@ -32,7 +32,7 @@
 - ملف الإنجاز والمرفقات ✅
 - الطلاب والحضور والدرجات والتقارير ✅
 - فهرسة المنهج ⏳
-- Cloud AI ⏳
+- Cloud AI gateway + Android client ✅\n- نشر البوابة وضبط الأسرار ⏳
 
 ## التخزين
 - البيانات المنظمة: Room.
@@ -47,9 +47,27 @@
 - Release signing منفصل ويجب حفظه خارج المستودع.
 - CI يستخدم `1000 + GITHUB_RUN_NUMBER` كـ versionCode.
 
-## AI المستقبلي
-طبقة AI ستكتب النتائج إلى بنية البيانات المحلية الحالية بدل إنشاء مسار بيانات منفصل.
-بيانات الطلاب الحساسة لا تُرسل افتراضيًا إلى السحابة.
+## Cloud AI
+التطبيق لا يحتوي API keys. يحتوي فقط عنوان البوابة عبر
+`BuildConfig.AI_GATEWAY_URL`.
+
+التدفق:
+```
+Indexed lesson text
+  ↓
+Android AiQuestionService
+  ↓ HTTPS
+Cloudflare Worker
+  ↓
+Workers AI / Gemini / Groq / OpenRouter
+  ↓
+Question Bank (Room)
+```
+
+البوابة تطبق Rate Limiting وprovider failover، ولا تسمح للعميل
+باختيار endpoint خارجي أو تمرير API key.
+
+بيانات الطلاب والحضور والدرجات ليست جزءًا من طلبات AI الحالية.
 
 ## Package
 `com.hasan0525.hteacher`

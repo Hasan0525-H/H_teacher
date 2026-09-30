@@ -57,6 +57,7 @@ fun ExamGeneratorRoute(
         onAddQuestion = viewModel::addQuestion,
         onDeleteQuestion = viewModel::deleteQuestion,
         onGenerate = viewModel::generateExam,
+        onGenerateAi = viewModel::generateAiQuestions,
         onExport = viewModel::exportExam,
         onMessageShown = viewModel::clearMessage
     )
@@ -77,6 +78,7 @@ private fun ExamGeneratorScreen(
     onAddQuestion: (String, String, QuestionType, Difficulty) -> Unit,
     onDeleteQuestion: (Long) -> Unit,
     onGenerate: () -> Unit,
+    onGenerateAi: () -> Unit,
     onExport: (Uri, Boolean) -> Unit,
     onMessageShown: () -> Unit
 ) {
@@ -311,6 +313,45 @@ private fun ExamGeneratorScreen(
                                 Text("إنشاء الاختبار")
                             }
                         }
+
+                        if (state.isAiGenerating) {
+                            LinearProgressIndicator(
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        Button(
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = state.aiConfigured &&
+                                state.selectedCurriculumId != null &&
+                                state.indexedLessonCount > 0 &&
+                                !state.isAiGenerating,
+                            onClick = onGenerateAi
+                        ) {
+                            Text(
+                                if (state.isAiGenerating) {
+                                    "جارٍ توليد الأسئلة..."
+                                } else {
+                                    "توليد أسئلة بالذكاء الاصطناعي"
+                                }
+                            )
+                        }
+
+                        Text(
+                            text = when {
+                                !state.aiConfigured ->
+                                    "AI غير مفعّل في هذا البناء."
+                                state.selectedCurriculumId == null ->
+                                    "اختر منهجًا محددًا لاستخدام AI."
+                                state.indexedLessonCount == 0 ->
+                                    "أضف نص الدروس من فهرسة المنهج أولًا."
+                                else ->
+                                    "الدروس الجاهزة للذكاء الاصطناعي: " +
+                                        state.indexedLessonCount
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }

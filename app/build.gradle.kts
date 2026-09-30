@@ -15,6 +15,12 @@ val developmentVersionName = if (ciRunNumber > 0) {
     "0.1.0-dev"
 }
 
+val aiGatewayUrl = System.getenv("AI_GATEWAY_URL")
+    ?.trim()
+    ?.replace("\\", "\\\\")
+    ?.replace("\"", "\\\"")
+    .orEmpty()
+
 android {
     namespace = "com.hasan0525.hteacher"
     compileSdk = 36
@@ -34,6 +40,11 @@ android {
         targetSdk = 36
         versionCode = developmentVersionCode
         versionName = developmentVersionName
+        buildConfigField(
+            "String",
+            "AI_GATEWAY_URL",
+            "\"" + aiGatewayUrl + "\""
+        )
     }
 
     buildTypes {

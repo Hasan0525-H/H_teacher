@@ -1,6 +1,8 @@
 package com.hasan0525.hteacher.data
 
 import android.content.Context
+import com.hasan0525.hteacher.BuildConfig
+import com.hasan0525.hteacher.data.ai.AiQuestionService
 import com.hasan0525.hteacher.data.local.HTeacherDatabase
 import com.hasan0525.hteacher.data.repository.AppSettingsRepository
 import com.hasan0525.hteacher.data.repository.OfflineTeacherRepository
@@ -19,4 +21,9 @@ class AppContainer(context: Context) {
     )
 
     val settingsRepository = AppSettingsRepository(context)
+
+    val aiQuestionService = AiQuestionService(
+        settingsRepository = settingsRepository,
+        gatewayUrl = BuildConfig.AI_GATEWAY_URL
+    )
 }
