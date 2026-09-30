@@ -4,185 +4,45 @@ on:
   workflow_dispatch:
     inputs:
       account_id:
-        description: "Cloudflare Account ID (32 characters)"
-        required: false
+        description: "Cloudflare Account ID"
+        required: true
         type: string
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
     defaults:
       run:
         working-directory: services/ai-gateway
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "22"
 
-      - name: Install dependencies
+      - name: Install
         run: npm install --no-audit --no-fund
 
-      - name: Validate Worker
+      - name: Validate
         run: npm run check
 
-      - name: Resolve Cloudflare account
-        shell: bash
+      - name: Verify Cloudflare
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          PROVIDED_ACCOUNT_ID_RAW: ${{ inputs.account_id || secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT_ID: ${{ inputs.account_id }}
         run: |
-          set -euo pipefail
+          set -e
+          if [ -z "$TOKEN" ]; then echo "Missing CLOUDFLARE_API_TOKEN"; exit 1; fi
+          if ! echo "$ACCOUNT_ID" | grep -Eq '^[a-fA-F0-9]{32}$'; then echo "Invalid Account ID"; exit 1; fi
+          curl -fsS -H "Authorization: Bearer $TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/tokens/verify" \
+            > /tmp/cf.json
+          cat /tmp/cf.json
 
-          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
-            echo "::error::CLOUDFLARE_API_TOKEN is missing."
-            exit 1
-          fi
-
-          PROVIDED_ACCOUNT_ID="$(printf '%s' "${PROVIDED_ACCOUNT_ID_RAW:-}" | tr -d '[:space:]')"
-
-          if [ -z "$PROVIDED_ACCOUNT_ID" ]; then
-            echo "::error::Cloudflare Account ID is missing. Paste it into the Run workflow account_id field or set CLOUDFLARE_ACCOUNT_ID."
-            exit 1
-          fi
-
-          if ! printf '%s' "$PROVIDED_ACCOUNT_ID" | grep -Eq '^[A-Fa-f0-9]{32}          AUTH_HEADER="Authorization: Bearer $CLOUDFLARE_API_TOKEN"
-
-          echo "Checking Cloudflare account-owned API token..."
-
-          ACCOUNT_VERIFY_RESPONSE="$(curl -sS             -H "$AUTH_HEADER"             -H "Content-Type: application/json"             "$API/accounts/$PROVIDED_ACCOUNT_ID/tokens/verify")"
-
-          ACCOUNT_VERIFY_SUCCESS="$(echo "$ACCOUNT_VERIFY_RESPONSE" | jq -r '.success // false')"
-          ACCOUNT_TOKEN_STATUS="$(echo "$ACCOUNT_VERIFY_RESPONSE" | jq -r '.result.status // empty')"
-
-          if [ "$ACCOUNT_VERIFY_SUCCESS" = "true" ] && [ "$ACCOUNT_TOKEN_STATUS" = "active" ]; then
-            echo "Cloudflare account API token verified successfully."
-            echo "CLOUDFLARE_ACCOUNT_ID=$PROVIDED_ACCOUNT_ID" >> "$GITHUB_ENV"
-            exit 0
-          fi
-
-          echo "Account-token verification did not succeed; checking user API token compatibility..."
-
-          USER_VERIFY_RESPONSE="$(curl -sS             -H "$AUTH_HEADER"             -H "Content-Type: application/json"             "$API/user/tokens/verify")"
-
-          USER_VERIFY_SUCCESS="$(echo "$USER_VERIFY_RESPONSE" | jq -r '.success // false')"
-          USER_TOKEN_STATUS="$(echo "$USER_VERIFY_RESPONSE" | jq -r '.result.status // empty')"
-
-          if [ "$USER_VERIFY_SUCCESS" != "true" ] || [ "$USER_TOKEN_STATUS" != "active" ]; then
-            ACCOUNT_ERRORS="$(echo "$ACCOUNT_VERIFY_RESPONSE" | jq -c '.errors // []')"
-            USER_ERRORS="$(echo "$USER_VERIFY_RESPONSE" | jq -c '.errors // []')"
-            echo "::error::Cloudflare token verification failed. If this is an Account API token, CLOUDFLARE_ACCOUNT_ID must be the exact 32-character Account ID for the same account that owns the token."
-            echo "Account verification errors: $ACCOUNT_ERRORS"
-            echo "User verification errors: $USER_ERRORS"
-            exit 1
-          fi
-
-          echo "User API token verified successfully. Resolving account..."
-
-          ACCOUNTS_RESPONSE="$(curl -sS             -H "$AUTH_HEADER"             -H "Content-Type: application/json"             "$API/accounts?per_page=50")"
-
-          if [ "$(echo "$ACCOUNTS_RESPONSE" | jq -r '.success // false')" != "true" ]; then
-            echo "::error::The user API token cannot list Cloudflare accounts."
-            exit 1
-          fi
-
-          MATCH_COUNT="$(echo "$ACCOUNTS_RESPONSE" | jq             --arg id "$PROVIDED_ACCOUNT_ID"             '[.result[] | select(.id == $id)] | length')"
-
-          if [ "$MATCH_COUNT" = "1" ]; then
-            echo "CLOUDFLARE_ACCOUNT_ID=$PROVIDED_ACCOUNT_ID" >> "$GITHUB_ENV"
-            echo "Cloudflare account resolved successfully."
-            exit 0
-          fi
-
-          ACCOUNT_COUNT="$(echo "$ACCOUNTS_RESPONSE" | jq '.result | length')"
-
-          if [ "$ACCOUNT_COUNT" = "1" ]; then
-            RESOLVED_ACCOUNT_ID="$(echo "$ACCOUNTS_RESPONSE" | jq -r '.result[0].id')"
-            echo "CLOUDFLARE_ACCOUNT_ID=$RESOLVED_ACCOUNT_ID" >> "$GITHUB_ENV"
-            echo "Using the single Cloudflare account visible to this user token."
-            exit 0
-          fi
-
-          echo "::error::CLOUDFLARE_ACCOUNT_ID does not match an account visible to this token."
-          exit 1
-
-      - name: Deploy Worker
-        run: npm run deploy
+      - name: Deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-; then
-            echo "::error::Cloudflare Account ID must be exactly 32 hexadecimal characters. Copy it from Cloudflare Dashboard search > Copy account ID."
-            exit 1
-          fi
-
-          API="https://api.cloudflare.com/client/v4"
-          AUTH_HEADER="Authorization: Bearer $CLOUDFLARE_API_TOKEN"
-
-          echo "Checking Cloudflare account-owned API token..."
-
-          ACCOUNT_VERIFY_RESPONSE="$(curl -sS             -H "$AUTH_HEADER"             -H "Content-Type: application/json"             "$API/accounts/$PROVIDED_ACCOUNT_ID/tokens/verify")"
-
-          ACCOUNT_VERIFY_SUCCESS="$(echo "$ACCOUNT_VERIFY_RESPONSE" | jq -r '.success // false')"
-          ACCOUNT_TOKEN_STATUS="$(echo "$ACCOUNT_VERIFY_RESPONSE" | jq -r '.result.status // empty')"
-
-          if [ "$ACCOUNT_VERIFY_SUCCESS" = "true" ] && [ "$ACCOUNT_TOKEN_STATUS" = "active" ]; then
-            echo "Cloudflare account API token verified successfully."
-            echo "CLOUDFLARE_ACCOUNT_ID=$PROVIDED_ACCOUNT_ID" >> "$GITHUB_ENV"
-            exit 0
-          fi
-
-          echo "Account-token verification did not succeed; checking user API token compatibility..."
-
-          USER_VERIFY_RESPONSE="$(curl -sS             -H "$AUTH_HEADER"             -H "Content-Type: application/json"             "$API/user/tokens/verify")"
-
-          USER_VERIFY_SUCCESS="$(echo "$USER_VERIFY_RESPONSE" | jq -r '.success // false')"
-          USER_TOKEN_STATUS="$(echo "$USER_VERIFY_RESPONSE" | jq -r '.result.status // empty')"
-
-          if [ "$USER_VERIFY_SUCCESS" != "true" ] || [ "$USER_TOKEN_STATUS" != "active" ]; then
-            ACCOUNT_ERRORS="$(echo "$ACCOUNT_VERIFY_RESPONSE" | jq -c '.errors // []')"
-            USER_ERRORS="$(echo "$USER_VERIFY_RESPONSE" | jq -c '.errors // []')"
-            echo "::error::Cloudflare token verification failed. If this is an Account API token, CLOUDFLARE_ACCOUNT_ID must be the exact 32-character Account ID for the same account that owns the token."
-            echo "Account verification errors: $ACCOUNT_ERRORS"
-            echo "User verification errors: $USER_ERRORS"
-            exit 1
-          fi
-
-          echo "User API token verified successfully. Resolving account..."
-
-          ACCOUNTS_RESPONSE="$(curl -sS             -H "$AUTH_HEADER"             -H "Content-Type: application/json"             "$API/accounts?per_page=50")"
-
-          if [ "$(echo "$ACCOUNTS_RESPONSE" | jq -r '.success // false')" != "true" ]; then
-            echo "::error::The user API token cannot list Cloudflare accounts."
-            exit 1
-          fi
-
-          MATCH_COUNT="$(echo "$ACCOUNTS_RESPONSE" | jq             --arg id "$PROVIDED_ACCOUNT_ID"             '[.result[] | select(.id == $id)] | length')"
-
-          if [ "$MATCH_COUNT" = "1" ]; then
-            echo "CLOUDFLARE_ACCOUNT_ID=$PROVIDED_ACCOUNT_ID" >> "$GITHUB_ENV"
-            echo "Cloudflare account resolved successfully."
-            exit 0
-          fi
-
-          ACCOUNT_COUNT="$(echo "$ACCOUNTS_RESPONSE" | jq '.result | length')"
-
-          if [ "$ACCOUNT_COUNT" = "1" ]; then
-            RESOLVED_ACCOUNT_ID="$(echo "$ACCOUNTS_RESPONSE" | jq -r '.result[0].id')"
-            echo "CLOUDFLARE_ACCOUNT_ID=$RESOLVED_ACCOUNT_ID" >> "$GITHUB_ENV"
-            echo "Using the single Cloudflare account visible to this user token."
-            exit 0
-          fi
-
-          echo "::error::CLOUDFLARE_ACCOUNT_ID does not match an account visible to this token."
-          exit 1
-
-      - name: Deploy Worker
+          CLOUDFLARE_ACCOUNT_ID: ${{ inputs.account_id }}
         run: npm run deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
