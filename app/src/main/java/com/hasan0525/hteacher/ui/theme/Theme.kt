@@ -1,25 +1,40 @@
 package com.hasan0525.hteacher.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF116A5B), onPrimary = Color.White,
-    primaryContainer = Color(0xFFD5F3EA), onPrimaryContainer = Color(0xFF073B33),
-    secondary = Color(0xFF52665F), background = Color(0xFFF7FAF8), surface = Color.White,
-    surfaceVariant = Color(0xFFE5ECE8), onSurface = Color(0xFF18201D), onSurfaceVariant = Color(0xFF59635F)
-)
-
-private val DarkColors = darkColorScheme(
-    primary = Color(0xFF7AD7C1), onPrimary = Color(0xFF00382F),
-    primaryContainer = Color(0xFF075043), onPrimaryContainer = Color(0xFF9CF4DC),
-    secondary = Color(0xFFB7CCC4), background = Color(0xFF0F1513), surface = Color(0xFF171D1B),
-    surfaceVariant = Color(0xFF27312D), onSurface = Color(0xFFE4EAE7), onSurfaceVariant = Color(0xFFBEC9C4)
+    primary = Color(0xFF6B5BFF),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFE9E5FF),
+    onPrimaryContainer = Color(0xFF241B5E),
+    secondary = Color(0xFF4F6278),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFDCE8F8),
+    onSecondaryContainer = Color(0xFF182534),
+    tertiary = Color(0xFF8B5E83),
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFFFD9F3),
+    onTertiaryContainer = Color(0xFF35132E),
+    background = Color(0xFFF9F9FC),
+    onBackground = Color(0xFF17171C),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF17171C),
+    surfaceVariant = Color(0xFFF0F0F5),
+    onSurfaceVariant = Color(0xFF686873),
+    outline = Color(0xFFD9D9E2)
 )
 
 @Composable
-fun HTeacherTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = if (darkTheme) DarkColors else LightColors, typography = AppTypography, content = content)
+fun HTeacherTheme(
+    darkTheme: Boolean = false,
+    content: @Composable () -> Unit
+) {
+    MaterialTheme(
+        colorScheme = LightColors,
+        typography = AppTypography,
+        content = content
+    )
 }
