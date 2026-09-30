@@ -24,8 +24,25 @@ class OfflineTeacherRepository(
     suspend fun addSubject(name: String): Long =
         subjectDao.insert(SubjectEntity(name = name.trim()))
 
+    suspend fun updateSubject(subject: SubjectEntity) =
+        subjectDao.update(subject)
+
+    suspend fun deleteSubject(subject: SubjectEntity) =
+        subjectDao.delete(subject)
+
     suspend fun addGrade(name: String, sortOrder: Int = 0): Long =
-        gradeDao.insert(GradeEntity(name = name.trim(), sortOrder = sortOrder))
+        gradeDao.insert(
+            GradeEntity(
+                name = name.trim(),
+                sortOrder = sortOrder
+            )
+        )
+
+    suspend fun updateGrade(grade: GradeEntity) =
+        gradeDao.update(grade)
+
+    suspend fun deleteGrade(grade: GradeEntity) =
+        gradeDao.delete(grade)
 
     suspend fun addCurriculum(
         subjectId: Long,
@@ -40,6 +57,12 @@ class OfflineTeacherRepository(
             localFileUri = localFileUri
         )
     )
+
+    suspend fun updateCurriculum(curriculum: CurriculumEntity) =
+        curriculumDao.update(curriculum)
+
+    suspend fun deleteCurriculum(curriculum: CurriculumEntity) =
+        curriculumDao.delete(curriculum)
 
     suspend fun addQuestion(question: QuestionEntity): Long =
         questionDao.insert(question)
