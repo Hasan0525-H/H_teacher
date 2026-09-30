@@ -1,15 +1,28 @@
 # المعلم H
 
-تطبيق أندرويد احترافي للمعلم السعودي، يعمل بأسلوب Offline-first وقابل للتوسع.
+تطبيق أندرويد احترافي للمعلم السعودي، يعمل بأسلوب **Offline-first** وقابل للتوسع.
 
-## الهوية التقنية
+## المرحلة الحالية
+**v0.1.0 — تأسيس التطبيق**
+
+تم تجهيز:
+- Kotlin عبر Built-in Kotlin في AGP 9.
+- Jetpack Compose + Material 3.
+- MVVM foundation.
+- RTL عربي.
+- هوية أولية وأيقونة خاصة.
+- Light/Dark theme.
+- GitHub Actions لبناء Debug APK تلقائيًا.
+
+## الهوية الثابتة
+- App name: **المعلم H**
 - Application ID: `com.hasan0525.hteacher`
-- Kotlin
-- Jetpack Compose
-- MVVM
-- Arabic RTL
-- Room + DataStore (المرحلة التالية)
-- Cloud AI عبر طبقة مزودات قابلة للتبديل (لاحقًا)
+- Min SDK: 26
+- Target / Compile SDK: 37
 
-## الحالة
-المرحلة 1 — تأسيس التطبيق.
+## القادم
+1. Room Database.
+2. DataStore.
+3. طبقة Repository.
+4. إدارة المواد والصفوف.
+5. استيراد وحفظ ملفات المناهج PDF.
