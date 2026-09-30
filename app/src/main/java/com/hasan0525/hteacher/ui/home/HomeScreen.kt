@@ -8,17 +8,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Assignment
-import androidx.compose.material.icons.outlined.Book
-import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material.icons.outlined.GridView
-import androidx.compose.material.icons.outlined.School
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -30,10 +25,10 @@ fun HomeRoute(
     onOpenTools: () -> Unit,
     viewModel: HomeViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-    HomeScreen(
+    HomeDashboard(
         state = viewModel.uiState,
         onToolClick = { tool ->
-            if (tool.status != ToolStatus.READY) return@HomeScreen
+            if (tool.status != ToolStatus.READY) return@HomeDashboard
             when (tool.id) {
                 ToolId.CURRICULA -> onOpenCurricula()
                 ToolId.EXAMS -> onOpenExams()
@@ -46,7 +41,7 @@ fun HomeRoute(
 }
 
 @Composable
-private fun HomeScreen(
+private fun HomeDashboard(
     state: HomeUiState,
     onToolClick: (TeacherTool) -> Unit
 ) {
@@ -56,57 +51,54 @@ private fun HomeScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            "المعلم H",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            state.greeting,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Icon(
-                        Icons.Outlined.School,
-                        contentDescription = null,
-                        modifier = Modifier.size(30.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                Column {
+                    Text(
+                        "مرحباً بالمعلم 👋",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        state.greeting,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
             item {
-                Text(
-                    "الأدوات",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Column(Modifier.padding(22.dp)) {
+                        Text("لوحة المعلم", fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(8.dp))
+                        Text("كل أدواتك التعليمية في مكان واحد")
+                    }
+                }
+            }
+
+            item {
+                Text("الأدوات", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             }
 
             items(state.tools, key = { it.id }) { tool ->
-                HomeToolCard(tool, onClick = { onToolClick(tool) })
+                TeacherToolCard(tool, onToolClick)
             }
         }
     }
 }
 
 @Composable
-private fun HomeToolCard(
+private fun TeacherToolCard(
     tool: TeacherTool,
-    onClick: () -> Unit
+    onToolClick: (TeacherTool) -> Unit
 ) {
-    val enabled = tool.status == ToolStatus.READY
     val icon = when (tool.id) {
-        ToolId.CURRICULA -> Icons.Outlined.Book
+        ToolId.CURRICULA -> Icons.Outlined.MenuBook
         ToolId.EXAMS -> Icons.Outlined.Assignment
         ToolId.PORTFOLIO -> Icons.Outlined.Folder
         ToolId.MORE -> Icons.Outlined.GridView
@@ -116,12 +108,10 @@ private fun HomeToolCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .clickable(enabled = enabled, onClick = onClick),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
-        shadowElevation = 1.dp,
-        shape = RoundedCornerShape(22.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .clickable { onToolClick(tool) },
+        shape = RoundedCornerShape(24.dp),
+        tonalElevation = 2.dp
     ) {
         Row(
             modifier = Modifier.padding(18.dp),
@@ -130,39 +120,19 @@ private fun HomeToolCard(
         ) {
             Box(
                 modifier = Modifier
-                    .size(52.dp)
-                    .background(
-                        MaterialTheme.colorScheme.primaryContainer,
-                        CircleShape
-                    ),
+                    .size(54.dp)
+                    .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                Icon(icon, null)
             }
 
-            Text(
-                text = tool.title,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = if (enabled) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
-
-            if (enabled) {
-                Text(
-                    "›",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Column(Modifier.weight(1f)) {
+                Text(tool.title, fontWeight = FontWeight.Bold)
+                Text("فتح الأداة", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+
+            Text("›", style = MaterialTheme.typography.headlineMedium)
         }
     }
 }
