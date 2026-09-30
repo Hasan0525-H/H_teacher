@@ -23,6 +23,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun HomeRoute(
     onOpenCurricula: () -> Unit,
     onOpenExams: () -> Unit,
+    onOpenPortfolio: () -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     HomeScreen(
@@ -32,6 +33,7 @@ fun HomeRoute(
                 tool.status != ToolStatus.READY -> Unit
                 tool.id == ToolId.CURRICULA -> onOpenCurricula()
                 tool.id == ToolId.EXAMS -> onOpenExams()
+                tool.id == ToolId.PORTFOLIO -> onOpenPortfolio()
                 else -> Unit
             }
         }

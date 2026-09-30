@@ -15,6 +15,8 @@ private val Context.settingsDataStore by preferencesDataStore(
 data class AppSettings(
     val teacherName: String = "",
     val schoolName: String = "",
+    val specialization: String = "",
+    val jobTitle: String = "",
     val useDarkTheme: Boolean = false
 )
 
@@ -24,6 +26,8 @@ class AppSettingsRepository(
     private object Keys {
         val TeacherName = stringPreferencesKey("teacher_name")
         val SchoolName = stringPreferencesKey("school_name")
+        val Specialization = stringPreferencesKey("specialization")
+        val JobTitle = stringPreferencesKey("job_title")
         val UseDarkTheme = booleanPreferencesKey("use_dark_theme")
     }
 
@@ -31,17 +35,23 @@ class AppSettingsRepository(
         AppSettings(
             teacherName = preferences[Keys.TeacherName].orEmpty(),
             schoolName = preferences[Keys.SchoolName].orEmpty(),
+            specialization = preferences[Keys.Specialization].orEmpty(),
+            jobTitle = preferences[Keys.JobTitle].orEmpty(),
             useDarkTheme = preferences[Keys.UseDarkTheme] ?: false
         )
     }
 
     suspend fun updateTeacherProfile(
         teacherName: String,
-        schoolName: String
+        schoolName: String,
+        specialization: String,
+        jobTitle: String
     ) {
         context.settingsDataStore.edit { preferences ->
             preferences[Keys.TeacherName] = teacherName.trim()
             preferences[Keys.SchoolName] = schoolName.trim()
+            preferences[Keys.Specialization] = specialization.trim()
+            preferences[Keys.JobTitle] = jobTitle.trim()
         }
     }
 

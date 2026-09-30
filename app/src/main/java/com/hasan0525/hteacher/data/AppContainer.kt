@@ -12,7 +12,8 @@ class AppContainer(context: Context) {
         subjectDao = database.subjectDao(),
         gradeDao = database.gradeDao(),
         curriculumDao = database.curriculumDao(),
-        questionDao = database.questionDao()
+        questionDao = database.questionDao(),
+        portfolioDao = database.portfolioDao()
     )
 
     val settingsRepository = AppSettingsRepository(context)

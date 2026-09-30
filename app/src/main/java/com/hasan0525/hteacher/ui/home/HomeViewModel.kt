@@ -44,8 +44,8 @@ class HomeViewModel : ViewModel() {
             TeacherTool(
                 id = ToolId.PORTFOLIO,
                 title = "ملف الإنجاز",
-                description = "تنظيم الشواهد والتقارير المهنية",
-                status = ToolStatus.COMING_SOON
+                description = "الشواهد والمرفقات والتصدير PDF",
+                status = ToolStatus.READY
             ),
             TeacherTool(
                 id = ToolId.MORE,

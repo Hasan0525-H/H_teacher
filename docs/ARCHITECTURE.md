@@ -6,13 +6,13 @@
 3. الحالة عبر ViewModel.
 4. Room هو المصدر الأساسي لبيانات المجال.
 5. DataStore للإعدادات الصغيرة.
-6. ملفات PDF تحفظ في مساحة التطبيق الداخلية.
+6. الملفات تحفظ في مساحة التطبيق الداخلية.
 7. لا توجد destructive migrations.
-8. PDF export يستخدم Android APIs المدمجة لتقليل الحجم.
-9. الذكاء الاصطناعي السحابي سيبقى خلف abstraction مستقل.
+8. PDF uses Android APIs المدمجة لتقليل الحجم.
+9. الذكاء الاصطناعي السحابي خلف abstraction مستقل.
 10. الاستقرار مقدم على SDK Preview.
 
-## الطبقات
+## طبقات التطبيق
 ```
 UI (Compose)
   ↓
@@ -23,53 +23,43 @@ Repository / Engines
 Room / DataStore / Internal Files / PdfDocument
 ```
 
-## قاعدة البيانات v1
+## قاعدة البيانات
+### v1
 - subjects
 - grades
 - curricula
 - questions
 
-## المناهج
+### v2
+- portfolio_items
+- portfolio_attachments
+
+الانتقال `1 → 2` يتم عبر `MIGRATION_1_2` ولا يحذف الجداول السابقة.
+
+## ملف الإنجاز
 ```
-Storage Access Framework
+Portfolio UI
   ↓
-CurriculumFileStore
-  ↓
-Internal app files /curricula
-  ↓
-Room metadata
-  ↓
-Android PdfRenderer
+PortfolioViewModel
+  ├── AppSettingsRepository
+  ├── OfflineTeacherRepository
+  ├── PortfolioFileStore
+  └── PdfPortfolioExporter
 ```
 
-## مولد الاختبارات
-```
-Question Bank (Room)
-  ↓
-Local Exam Selection Engine
-  ↓
-GeneratedExam
-  ├── UI Preview
-  ├── Questions PDF
-  └── Answers PDF
-```
+المرفقات تحفظ في `filesDir/portfolio` بينما Room يحفظ البيانات الوصفية والمسار فقط.
 
-## التوقيع والإصدارات
-- Package ثابت: `com.hasan0525.hteacher`.
-- Debug يستخدم مفتاح تطوير ثابت في `keystore/hteacher-debug.jks` لتسهيل التحديث فوق نسخ الاختبار.
-- مفتاح التطوير ليس مفتاح Release.
-- Release النهائي يجب أن يستخدم مفتاحًا دائمًا محفوظًا خارج GitHub وممررًا عبر Secrets.
-- CI يشتق versionCode من `1000 + GITHUB_RUN_NUMBER` ليكون متزايدًا بين builds.
-- أي جهاز ثبت APK أقدم قبل اعتماد المفتاح الثابت يحتاج إعادة تثبيت لمرة واحدة فقط.
-
-توليد الأسئلة بالذكاء الاصطناعي سيكتب إلى نفس Question Bank، لذلك إضافة AI لاحقًا لا تتطلب إعادة تصميم مولد الاختبارات.
+## التوقيع
+- Debug: مفتاح تطوير ثابت داخل المستودع لاستخدام الاختبارات فقط.
+- Release: مفتاح إنتاج دائم يجب أن يبقى خارج المستودع.
+- CI: `versionCode = 1000 + GITHUB_RUN_NUMBER`.
 
 ## المراحل
-- Phase 1: App shell, identity, RTL, UI foundation. ✅
-- Phase 2: Room + DataStore + repositories. ✅
+- Phase 1: App shell, identity, RTL. ✅
+- Phase 2: Room + DataStore. ✅
 - Phase 3: Curriculum/PDF management. ✅
 - Phase 4: Exam generator + PDF export. ✅
-- Phase 5: Professional portfolio.
+- Phase 5: Professional portfolio. ✅
 - Phase 6: Students, attendance, grades, reports.
 - Cloud AI: provider abstraction + protected server gateway.
 
