@@ -12,83 +12,51 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
-import com.hasan0525.hteacher.ui.curriculum.CurriculumRoute
-import com.hasan0525.hteacher.ui.exam.ExamGeneratorRoute
-import com.hasan0525.hteacher.ui.home.HomeRoute
+import com.hasan0525.hteacher.ui.modern.ModernCurriculum
+import com.hasan0525.hteacher.ui.modern.ModernExam
+import com.hasan0525.hteacher.ui.modern.ModernHome
+import com.hasan0525.hteacher.ui.modern.ModernPortfolio
+import com.hasan0525.hteacher.ui.modern.ModernTools
 import com.hasan0525.hteacher.ui.pdf.PdfViewerScreen
-import com.hasan0525.hteacher.ui.portfolio.PortfolioRoute
 import com.hasan0525.hteacher.ui.theme.HTeacherTheme
-import com.hasan0525.hteacher.ui.tools.TeacherToolsRoute
 
-private const val ROUTE_HOME = "home"
-private const val ROUTE_CURRICULA = "curricula"
-private const val ROUTE_EXAMS = "exams"
-private const val ROUTE_PORTFOLIO = "portfolio"
-private const val ROUTE_TOOLS = "tools"
-private const val ROUTE_PDF = "pdf"
+private const val HOME="home"
+private const val CURRICULA="curricula"
+private const val EXAMS="exams"
+private const val PORTFOLIO="portfolio"
+private const val TOOLS="tools"
+private const val PDF="pdf"
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         setContent {
             HTeacherTheme {
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                    var route by rememberSaveable { mutableStateOf(ROUTE_HOME) }
+                    var route by rememberSaveable { mutableStateOf(HOME) }
                     var pdfPath by rememberSaveable { mutableStateOf("") }
                     var pdfTitle by rememberSaveable { mutableStateOf("") }
 
-                    BackHandler(enabled = route != ROUTE_HOME) {
-                        route = if (route == ROUTE_PDF) {
-                            ROUTE_CURRICULA
-                        } else {
-                            ROUTE_HOME
-                        }
+                    fun navigate(target:String) {
+                        if (target in setOf(HOME,CURRICULA,EXAMS,PORTFOLIO,TOOLS)) route=target
                     }
 
-                    when (route) {
-                        ROUTE_CURRICULA -> CurriculumRoute(
-                            onBack = { route = ROUTE_HOME },
-                            onOpenPdf = { path, title ->
-                                pdfPath = path
-                                pdfTitle = title
-                                route = ROUTE_PDF
-                            }
-                        )
+                    BackHandler(enabled=route!=HOME) {
+                        route=if(route==PDF) CURRICULA else HOME
+                    }
 
-                        ROUTE_EXAMS -> ExamGeneratorRoute(
-                            onBack = { route = ROUTE_HOME }
+                    when(route) {
+                        CURRICULA -> ModernCurriculum(
+                            onBack={route=HOME},
+                            onNavigate=::navigate,
+                            onOpenPdf={path,title->pdfPath=path;pdfTitle=title;route=PDF}
                         )
-
-                        ROUTE_PORTFOLIO -> PortfolioRoute(
-                            onBack = { route = ROUTE_HOME }
-                        )
-
-                        ROUTE_TOOLS -> TeacherToolsRoute(
-                            onBack = { route = ROUTE_HOME }
-                        )
-
-                        ROUTE_PDF -> PdfViewerScreen(
-                            filePath = pdfPath,
-                            title = pdfTitle,
-                            onBack = { route = ROUTE_CURRICULA }
-                        )
-
-                        else -> HomeRoute(
-                            onOpenCurricula = {
-                                route = ROUTE_CURRICULA
-                            },
-                            onOpenExams = {
-                                route = ROUTE_EXAMS
-                            },
-                            onOpenPortfolio = {
-                                route = ROUTE_PORTFOLIO
-                            },
-                            onOpenTools = {
-                                route = ROUTE_TOOLS
-                            }
-                        )
+                        EXAMS -> ModernExam(onBack={route=HOME},onNavigate=::navigate)
+                        PORTFOLIO -> ModernPortfolio(onBack={route=HOME},onNavigate=::navigate)
+                        TOOLS -> ModernTools(onBack={route=HOME},onNavigate=::navigate)
+                        PDF -> PdfViewerScreen(filePath=pdfPath,title=pdfTitle,onBack={route=CURRICULA})
+                        else -> ModernHome(onOpen=::navigate)
                     }
                 }
             }
