@@ -42,7 +42,7 @@ class CurriculumPdfImportTest {
                     Intent().setData(documentUri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 )
             )
-            compose.onAllNodesWithText("المناهج").onFirst().performClick()
+            compose.onNodeWithText("المكتبة").performClick()
             compose.onNodeWithText("إضافة كتاب أو منهج").performClick()
             intended(hasAction(Intent.ACTION_OPEN_DOCUMENT))
             compose.waitUntil(10_000) {
