@@ -1,13 +1,9 @@
 package com.hasan0525.hteacher.ui.home
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -50,53 +46,43 @@ private fun HomeDashboard(
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         LazyColumn(
             Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(start = 18.dp, top = 18.dp, end = 18.dp, bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            contentPadding = PaddingValues(18.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text("المعلم H", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                        Text("كل أدواتك في مكان واحد", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("المعلم H", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                        Text("لوحة المعلم", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp) {
-                        Icon(Icons.Outlined.Person, "الملف", Modifier.padding(11.dp).size(24.dp))
+                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
+                        Icon(Icons.Outlined.Person, null, Modifier.padding(12.dp).size(26.dp), tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
             item {
-                Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(30.dp), color = MaterialTheme.colorScheme.primary) {
-                    Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("ابدأ عملك", color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .8f))
-                            Spacer(Modifier.height(5.dp))
-                            Text("جهّز منهجك أو أنشئ اختبارك", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surface, tonalElevation = 1.dp) {
+                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("ابدأ من هنا", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text("اختر الأداة التي تحتاجها الآن", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            QuickAction(Modifier.weight(1f), Icons.Outlined.MenuBook, "المناهج", state.tools.firstOrNull { it.id == ToolId.CURRICULA }, onToolClick)
+                            QuickAction(Modifier.weight(1f), Icons.Outlined.Assignment, "اختبار", state.tools.firstOrNull { it.id == ToolId.EXAMS }, onToolClick)
                         }
-                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .14f)) {
-                            Icon(Icons.Outlined.AutoAwesome, null, Modifier.padding(14.dp).size(30.dp), tint = MaterialTheme.colorScheme.onPrimary)
-                        }
+                        QuickAction(Modifier.fillMaxWidth(), Icons.Outlined.Folder, "ملف الإنجاز", state.tools.firstOrNull { it.id == ToolId.PORTFOLIO }, onToolClick)
                     }
                 }
             }
             item {
-                Text("وصول سريع", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(10.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    QuickAction(Modifier.weight(1f), Icons.Outlined.MenuBook, "المناهج", state.tools.firstOrNull { it.id == ToolId.CURRICULA }, onToolClick)
-                    QuickAction(Modifier.weight(1f), Icons.Outlined.Assignment, "اختبار", state.tools.firstOrNull { it.id == ToolId.EXAMS }, onToolClick)
-                    QuickAction(Modifier.weight(1f), Icons.Outlined.Folder, "الإنجاز", state.tools.firstOrNull { it.id == ToolId.PORTFOLIO }, onToolClick)
-                }
+                Text("الأدوات", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
-            item {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("الأدوات", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                    Text("أدوات جاهزة", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                }
+            items(state.tools, key = { it.id }) { tool ->
+                ToolListRow(tool, onToolClick)
             }
-            items(state.tools, key = { it.id }) { tool -> ToolListRow(tool, onToolClick) }
         }
     }
 }
+
 @Composable
 private fun QuickAction(
     modifier: Modifier,
