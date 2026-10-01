@@ -14,6 +14,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.EventAvailable
+import androidx.compose.material.icons.outlined.Assessment
+import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -86,122 +90,84 @@ private fun TeacherToolsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showStudentDialog by remember { mutableStateOf(false) }
     var showGradeDialog by remember { mutableStateOf(false) }
-
-    val reportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/pdf")
-    ) { uri ->
-        if (uri != null) onExportReport(uri)
-    }
+    val reportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri -> if (uri != null) onExportReport(uri) }
 
     LaunchedEffect(state.message) {
-        val current = state.message ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(current)
-        onMessageShown()
+        state.message?.let { snackbarHostState.showSnackbar(it); onMessageShown() }
     }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        text = "أدوات المعلم",
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.Outlined.ArrowBack,
-                            contentDescription = "رجوع"
-                        )
-                    }
-                }
+                title = { Text("الأدوات", fontWeight = FontWeight.Bold) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, "رجوع") } }
             )
         }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+    ) { padding ->
+        LazyColumn(
+            Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            LazyRow(
-                modifier = Modifier.padding(
-                    horizontal = 16.dp,
-                    vertical = 10.dp
-                ),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(
-                    items = TeacherToolsSection.entries.toList(),
-                    key = { it.name }
-                ) { section ->
-                    FilterChip(
-                        selected = state.section == section,
-                        onClick = { onSelectSection(section) },
-                        label = { Text(section.label) }
-                    )
+            item {
+                Text("إدارة الفصل", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text("الطلاب والحضور والدرجات والتقارير", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            item {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    ToolSectionCard(Modifier.weight(1f), Icons.Outlined.Groups, "الطلاب", state.section == TeacherToolsSection.STUDENTS) { onSelectSection(TeacherToolsSection.STUDENTS) }
+                    ToolSectionCard(Modifier.weight(1f), Icons.Outlined.EventAvailable, "الحضور", state.section == TeacherToolsSection.ATTENDANCE) { onSelectSection(TeacherToolsSection.ATTENDANCE) }
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    ToolSectionCard(Modifier.weight(1f), Icons.Outlined.Assessment, "الدرجات", state.section == TeacherToolsSection.GRADES) { onSelectSection(TeacherToolsSection.GRADES) }
+                    ToolSectionCard(Modifier.weight(1f), Icons.Outlined.PictureAsPdf, "التقارير", state.section == TeacherToolsSection.REPORTS) { onSelectSection(TeacherToolsSection.REPORTS) }
                 }
             }
-
-            when (state.section) {
-                TeacherToolsSection.STUDENTS -> StudentsContent(
-                    state = state,
-                    onAdd = { showStudentDialog = true },
-                    onDelete = onDeleteStudent
-                )
-
-                TeacherToolsSection.ATTENDANCE -> AttendanceContent(
-                    state = state,
-                    onPreviousDay = onPreviousDay,
-                    onNextDay = onNextDay,
-                    onSetAttendance = onSetAttendance
-                )
-
-                TeacherToolsSection.GRADES -> GradesContent(
-                    state = state,
-                    onSelectStudent = onSelectStudent,
-                    onAdd = { showGradeDialog = true },
-                    onDelete = onDeleteGradeRecord
-                )
-
-                TeacherToolsSection.REPORTS -> ReportsContent(
-                    state = state,
-                    onExport = {
-                        reportLauncher.launch("تقرير الطلاب.pdf")
-                    }
-                )
+            item {
+                when (state.section) {
+                    TeacherToolsSection.STUDENTS -> StudentsContent(state, { showStudentDialog = true }, onDeleteStudent)
+                    TeacherToolsSection.ATTENDANCE -> AttendanceContent(state, onPreviousDay, onNextDay, onSetAttendance)
+                    TeacherToolsSection.GRADES -> GradesContent(state, onSelectStudent, { showGradeDialog = true }, onDeleteGradeRecord)
+                    TeacherToolsSection.REPORTS -> ReportsContent(state) { reportLauncher.launch("تقرير الطلاب.pdf") }
+                }
             }
         }
     }
 
-    if (showStudentDialog) {
-        AddStudentDialog(
-            grades = state.grades,
-            onDismiss = { showStudentDialog = false },
-            onSave = { name, number, gradeId ->
-                onAddStudent(name, number, gradeId)
-                showStudentDialog = false
-            }
-        )
+    if (showStudentDialog) AddStudentDialog(state.grades, { showStudentDialog = false }) { name, number, gradeId ->
+        onAddStudent(name, number, gradeId); showStudentDialog = false
     }
-
     if (showGradeDialog) {
-        val studentId = state.selectedStudentId
+        state.selectedStudentId?.let { studentId ->
+            AddGradeDialog({ showGradeDialog = false }) { title, score, maxScore ->
+                onAddGradeRecord(studentId, title, score, maxScore); showGradeDialog = false
+            }
+        }
+    }
+}
 
-        if (studentId != null) {
-            AddGradeDialog(
-                onDismiss = { showGradeDialog = false },
-                onSave = { title, score, maxScore ->
-                    onAddGradeRecord(
-                        studentId,
-                        title,
-                        score,
-                        maxScore
-                    )
-                    showGradeDialog = false
-                }
-            )
+@Composable
+private fun ToolSectionCard(
+    modifier: Modifier,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = modifier.height(96.dp),
+        onClick = onClick,
+        shape = RoundedCornerShape(22.dp),
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.SpaceBetween) {
+            Surface(shape = CircleShape, color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = .12f) else MaterialTheme.colorScheme.surfaceVariant) {
+                Icon(icon, null, Modifier.padding(8.dp).size(22.dp), tint = MaterialTheme.colorScheme.primary)
+            }
+            Text(title, fontWeight = FontWeight.Bold)
         }
     }
 }
