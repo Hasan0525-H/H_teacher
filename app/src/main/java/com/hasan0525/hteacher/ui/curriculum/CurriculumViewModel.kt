@@ -163,23 +163,41 @@ class CurriculumViewModel(
         repository.deleteGrade(grade)
     }
 
+    // Legacy screen remains compatible; the active ModernCurriculum supplies explicit metadata.
     fun importPdf(uri: Uri) {
-        val state = uiState.value
-        val subjectId = state.selectedSubjectId
-        val gradeId = state.selectedGradeId
+        val current = uiState.value
+        importPdfWithMetadata(uri, current.selectedSubjectId, current.selectedGradeId, "", "")
+    }
 
-        if (subjectId == null || gradeId == null) {
-            message.value = "أضف مادة وصفًا واخترهما أولًا"
+    fun importPdfWithMetadata(
+        uri: Uri,
+        requestedSubjectId: Long?,
+        requestedGradeId: Long?,
+        newSubjectName: String,
+        newGradeName: String
+    ) {
+        if ((requestedSubjectId == null && newSubjectName.isBlank()) ||
+            (requestedGradeId == null && newGradeName.isBlank())) {
+            message.value = "حدد المادة والصف أو أضفهما قبل الحفظ"
             return
         }
+        if (isImporting.value) return
 
         viewModelScope.launch {
+            if (isImporting.value) return@launch
             isImporting.value = true
             var copiedPath: String? = null
-
             try {
+                // Validate and copy BEFORE inserting any records.
                 val storedPdf = fileStore.importPdf(uri)
                 copiedPath = storedPdf.absolutePath
+                val subjectId = if (newSubjectName.isNotBlank()) {
+                    repository.addSubject(newSubjectName)
+                } else requestedSubjectId ?: error("المادة غير محددة")
+                val gradeId = if (newGradeName.isNotBlank()) {
+                    val grades = uiState.value.grades
+                    repository.addGrade(newGradeName, (grades.maxOfOrNull { it.sortOrder } ?: -1) + 1)
+                } else requestedGradeId ?: error("الصف غير محدد")
 
                 repository.addCurriculum(
                     subjectId = subjectId,
@@ -187,11 +205,15 @@ class CurriculumViewModel(
                     title = storedPdf.title,
                     localFileUri = storedPdf.absolutePath
                 )
-
+                selectedSubjectId.value = subjectId
+                selectedGradeId.value = gradeId
                 message.value = "تم حفظ المنهج على الجهاز"
-            } catch (error: Throwable) {
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 fileStore.delete(copiedPath)
-                message.value = error.message ?: "تعذر استيراد ملف PDF"
+                throw cancelled
+            } catch (error: Exception) {
+                fileStore.delete(copiedPath)
+                message.value = error.message ?: "تعذر حفظ ملف PDF"
             } finally {
                 isImporting.value = false
             }

@@ -15,6 +15,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import android.provider.OpenableColumns
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -156,43 +159,250 @@ fun ModernHome(onOpen:(String)->Unit) {
 }
 
 @Composable
-fun ModernCurriculum(onBack:()->Unit,onOpenPdf:(String,String)->Unit,onNavigate:(String)->Unit={}) {
-    val app=(LocalContext.current.applicationContext as HTeacherApplication)
-    val vm:CurriculumViewModel=viewModel(factory=CurriculumViewModelFactory(app))
+fun ModernCurriculum(
+    onBack: () -> Unit,
+    onOpenPdf: (String, String) -> Unit,
+    onNavigate: (String) -> Unit = {}
+) {
+    val context = LocalContext.current
+    val application = context.applicationContext as HTeacherApplication
+    val vm: CurriculumViewModel = viewModel(factory = CurriculumViewModelFactory(application))
     val state by vm.uiState.collectAsStateWithLifecycle()
-    var showAddSubject by remember{mutableStateOf(false)}
-    var showAddGrade by remember{mutableStateOf(false)}
-    val picker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){u:Uri?->u?.let(vm::importPdf)}
-    Scaffold(containerColor=CanvasBg,bottomBar={ModernNav("curricula",onNavigate) }) {pad->
-        LazyColumn(Modifier.fillMaxSize().padding(pad),contentPadding=PaddingValues(bottom=30.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
-            item{HTitle("مكتبة المناهج","موادك وملفاتك في مساحة واحدة",onBack)}
-            item{
-                Row(Modifier.padding(horizontal=18.dp),horizontalArrangement=Arrangement.spacedBy(10.dp)){
-                    HChip(if(state.subjects.isEmpty())"إضافة مادة" else state.subjects.firstOrNull{it.id==state.selectedSubjectId}?.name?:"المادة",true){showAddSubject=true}
-                    HChip(if(state.grades.isEmpty())"إضافة صف" else state.grades.firstOrNull{it.id==state.selectedGradeId}?.name?:"الصف",false){showAddGrade=true}
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    var showAddSubject by remember { mutableStateOf(false) }
+    var showAddGrade by remember { mutableStateOf(false) }
+    var pendingPdfUri by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingPdfTitle by rememberSaveable { mutableStateOf("") }
+
+    // The active screen owns its own launcher; the legacy CurriculumRoute is not used by MainActivity.
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        if (uri == null) {
+            scope.launch { snackbar.showSnackbar("أُلغِي اختيار الملف") }
+        } else {
+            pendingPdfUri = uri.toString()
+            pendingPdfTitle = runCatching {
+                context.contentResolver.query(
+                    uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null
+                )?.use { cursor ->
+                    val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (index >= 0 && cursor.moveToFirst()) cursor.getString(index) else null
+                }
+            }.getOrNull().orEmpty().ifBlank { "منهج.pdf" }
+        }
+    }
+
+    LaunchedEffect(state.message) {
+        state.message?.let { message ->
+            snackbar.showSnackbar(message)
+            vm.clearMessage()
+        }
+    }
+
+    Scaffold(
+        containerColor = CanvasBg,
+        snackbarHost = { SnackbarHost(snackbar) },
+        bottomBar = { ModernNav("curricula", onNavigate) }
+    ) { padding ->
+        LazyColumn(
+            Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(bottom = 30.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item { HTitle("مكتبة المناهج", "موادك وملفاتك في مساحة واحدة", onBack) }
+            item {
+                Text("المادة", color = Ink, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 20.dp))
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(state.subjects, key = { it.id }) { subject ->
+                        HChip(subject.name, state.selectedSubjectId == subject.id) { vm.selectSubject(subject.id) }
+                    }
+                    item { HChip("+ مادة", false) { showAddSubject = true } }
                 }
             }
-            item{
-                HSurface(Modifier.padding(horizontal=18.dp).fillMaxWidth(),onClick={if(state.selectedSubjectId!=null&&state.selectedGradeId!=null)picker.launch(arrayOf("application/pdf"))}){
-                    Row(verticalAlignment=Alignment.CenterVertically){
-                        Surface(shape=CircleShape,color=BrandSoft){HIconView(HIcon.PDF,Modifier.padding(14.dp))}
+            item {
+                Text("الصف", color = Ink, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 20.dp))
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(state.grades, key = { it.id }) { grade ->
+                        HChip(grade.name, state.selectedGradeId == grade.id) { vm.selectGrade(grade.id) }
+                    }
+                    item { HChip("+ صف", false) { showAddGrade = true } }
+                }
+            }
+            item {
+                // This control ALWAYS opens the picker; metadata is requested afterwards.
+                HSurface(
+                    Modifier.padding(horizontal = 18.dp).fillMaxWidth(),
+                    onClick = { if (!state.isImporting) picker.launch(arrayOf("application/pdf")) }
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(shape = CircleShape, color = BrandSoft) {
+                            HIconView(HIcon.PDF, Modifier.padding(14.dp))
+                        }
                         Spacer(Modifier.width(14.dp))
-                        Column(Modifier.weight(1f)){Text("إضافة كتاب أو منهج",fontWeight=FontWeight.Bold,color=Ink);Text(if(state.isImporting)"جارٍ الحفظ..." else "PDF محفوظ داخل الجهاز",color=Muted)}
-                        HIconView(HIcon.PLUS, tint=Brand)
+                        Column(Modifier.weight(1f)) {
+                            Text("إضافة كتاب أو منهج", fontWeight = FontWeight.Bold, color = Ink)
+                            Text(
+                                if (state.isImporting) "جارٍ التحقق من الملف وحفظه..." else "اختر PDF من جهازك",
+                                color = Muted
+                            )
+                        }
+                        HIconView(HIcon.PLUS, tint = Brand)
+                    }
+                }
+                if (state.isImporting) {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                        color = Brand
+                    )
+                }
+            }
+            item {
+                Text(
+                    "مكتبتك",
+                    color = Ink,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 20.dp)
+                )
+            }
+            if (state.curricula.isEmpty()) {
+                item {
+                    HSurface(Modifier.padding(horizontal = 18.dp).fillMaxWidth()) {
+                        Text("المكتبة فارغة", fontWeight = FontWeight.Bold, color = Ink)
+                        Text("أضف ملف PDF للبدء", color = Muted, modifier = Modifier.padding(top = 6.dp))
                     }
                 }
             }
-            item{Text("مكتبتك",fontWeight=FontWeight.Bold,color=Ink,modifier=Modifier.padding(horizontal=20.dp))}
-            if(state.curricula.isEmpty()) item{HSurface(Modifier.padding(horizontal=18.dp).fillMaxWidth()){Text("المكتبة فارغة",fontWeight=FontWeight.Bold,color=Ink);Text("أضف أول ملف PDF للبدء",color=Muted,modifier=Modifier.padding(top=6.dp))}}
-            items(state.curricula,key={it.id}){c->
-                HSurface(Modifier.padding(horizontal=18.dp).fillMaxWidth(),onClick={onOpenPdf(c.localFileUri.orEmpty(),c.title)}){
-                    Row(verticalAlignment=Alignment.CenterVertically){Surface(shape=RoundedCornerShape(16.dp),color=BrandSoft){HIconView(HIcon.BOOK,Modifier.padding(12.dp))};Spacer(Modifier.width(14.dp));Column(Modifier.weight(1f)){Text(c.title,fontWeight=FontWeight.Bold,color=Ink,maxLines=1,overflow=TextOverflow.Ellipsis);Text("مادة ومرحلة محفوظة أوفلاين",color=Muted,style=MaterialTheme.typography.bodySmall)};HIconView(HIcon.ARROW,tint=Muted)}
+            items(state.curricula, key = { it.id }) { curriculum ->
+                HSurface(
+                    Modifier.padding(horizontal = 18.dp).fillMaxWidth(),
+                    onClick = {
+                        curriculum.localFileUri?.takeIf(String::isNotBlank)?.let {
+                            onOpenPdf(it, curriculum.title)
+                        }
+                    }
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(shape = RoundedCornerShape(16.dp), color = BrandSoft) {
+                            HIconView(HIcon.BOOK, Modifier.padding(12.dp))
+                        }
+                        Spacer(Modifier.width(14.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                curriculum.title, fontWeight = FontWeight.Bold, color = Ink,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis
+                            )
+                            Text("متاح دون إنترنت", color = Muted, style = MaterialTheme.typography.bodySmall)
+                        }
+                        HIconView(HIcon.ARROW, tint = Muted)
+                    }
                 }
             }
         }
     }
-    if(showAddSubject) HTextDialog("مادة جديدة","اسم المادة",onDismiss={showAddSubject=false},onSave={vm.addSubject(it);showAddSubject=false})
-    if(showAddGrade) HTextDialog("صف جديد","اسم الصف",onDismiss={showAddGrade=false},onSave={vm.addGrade(it);showAddGrade=false})
+
+    pendingPdfUri?.let { uriText ->
+        HImportPdfDialog(
+            fileName = pendingPdfTitle,
+            subjects = state.subjects.map { it.id to it.name },
+            grades = state.grades.map { it.id to it.name },
+            initialSubjectId = state.selectedSubjectId,
+            initialGradeId = state.selectedGradeId,
+            isImporting = state.isImporting,
+            onDismiss = { pendingPdfUri = null },
+            onImport = { subjectId, gradeId, newSubject, newGrade ->
+                vm.importPdfWithMetadata(
+                    uri = Uri.parse(uriText),
+                    requestedSubjectId = subjectId,
+                    requestedGradeId = gradeId,
+                    newSubjectName = newSubject,
+                    newGradeName = newGrade
+                )
+                pendingPdfUri = null
+            }
+        )
+    }
+    if (showAddSubject) {
+        HTextDialog("مادة جديدة", "اسم المادة",
+            onDismiss = { showAddSubject = false },
+            onSave = { vm.addSubject(it); showAddSubject = false })
+    }
+    if (showAddGrade) {
+        HTextDialog("صف جديد", "اسم الصف",
+            onDismiss = { showAddGrade = false },
+            onSave = { vm.addGrade(it); showAddGrade = false })
+    }
+}
+
+@Composable
+private fun HImportPdfDialog(
+    fileName: String,
+    subjects: List<Pair<Long, String>>,
+    grades: List<Pair<Long, String>>,
+    initialSubjectId: Long?,
+    initialGradeId: Long?,
+    isImporting: Boolean,
+    onDismiss: () -> Unit,
+    onImport: (Long?, Long?, String, String) -> Unit
+) {
+    var subjectId by remember(fileName) { mutableStateOf(initialSubjectId) }
+    var gradeId by remember(fileName) { mutableStateOf(initialGradeId) }
+    var newSubject by remember(fileName) { mutableStateOf("") }
+    var newGrade by remember(fileName) { mutableStateOf("") }
+    val effectiveSubjectId = subjectId?.takeIf { id -> subjects.any { it.first == id } }
+        ?: subjects.firstOrNull()?.first
+    val effectiveGradeId = gradeId?.takeIf { id -> grades.any { it.first == id } }
+        ?: grades.firstOrNull()?.first
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("حفظ المنهج") },
+        text = {
+            Column(
+                Modifier.heightIn(max = 470.dp).verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(fileName, style = MaterialTheme.typography.titleMedium)
+                Text("اختر مادة أو اكتب مادة جديدة")
+                subjects.forEach { (id, name) ->
+                    HChip(name, newSubject.isBlank() && effectiveSubjectId == id) {
+                        subjectId = id
+                        newSubject = ""
+                    }
+                }
+                HField("اسم مادة جديدة", newSubject, { newSubject = it })
+                Text("اختر صفًا أو اكتب صفًا جديدًا")
+                grades.forEach { (id, name) ->
+                    HChip(name, newGrade.isBlank() && effectiveGradeId == id) {
+                        gradeId = id
+                        newGrade = ""
+                    }
+                }
+                HField("اسم صف جديد", newGrade, { newGrade = it })
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !isImporting &&
+                    (newSubject.isNotBlank() || effectiveSubjectId != null) &&
+                    (newGrade.isNotBlank() || effectiveGradeId != null),
+                onClick = {
+                    onImport(
+                        if (newSubject.isNotBlank()) null else effectiveSubjectId,
+                        if (newGrade.isNotBlank()) null else effectiveGradeId,
+                        newSubject.trim(),
+                        newGrade.trim()
+                    )
+                }
+            ) { Text("حفظ المنهج") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("إلغاء") } }
+    )
 }
 
 @Composable
