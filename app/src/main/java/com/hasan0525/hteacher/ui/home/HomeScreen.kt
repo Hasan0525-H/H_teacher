@@ -24,7 +24,7 @@ fun HomeRoute(
     onOpenExams: () -> Unit,
     onOpenPortfolio: () -> Unit,
     onOpenTools: () -> Unit,
-    viewModel: androidx.lifecycle.viewmodel.compose.viewModel<HomeViewModel>() = androidx.lifecycle.viewmodel.compose.viewModel()
+    viewModel: HomeViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     HomeDashboard(
         state = viewModel.uiState,
