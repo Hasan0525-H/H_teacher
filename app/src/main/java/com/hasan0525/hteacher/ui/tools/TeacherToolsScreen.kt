@@ -12,7 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -85,38 +85,124 @@ private fun TeacherToolsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showStudentDialog by remember { mutableStateOf(false) }
     var showGradeDialog by remember { mutableStateOf(false) }
-    val reportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri -> if (uri != null) onExportReport(uri) }
+
+    val reportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/pdf")
+    ) { uri ->
+        if (uri != null) onExportReport(uri)
+    }
+
     LaunchedEffect(state.message) {
-        val message = state.message ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(message)
+        val current = state.message ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(current)
         onMessageShown()
     }
-    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, null) }
-                Column(Modifier.weight(1f)) {
-                    Text("أدوات المعلم", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Text("${state.students.size} طالب", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "أدوات المعلم",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.Outlined.ArrowBack,
+                            contentDescription = "رجوع"
+                        )
+                    }
                 }
-                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) { Icon(Icons.Outlined.Tune, null, Modifier.padding(10.dp), tint = MaterialTheme.colorScheme.primary) }
-            }
-            LazyRow(Modifier.fillMaxWidth().padding(horizontal = 18.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(TeacherToolsSection.entries.toList(), key = { it.name }) { section ->
-                    FilterChip(state.section == section, { onSelectSection(section) }, label = { Text(section.label) })
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            LazyRow(
+                modifier = Modifier.padding(
+                    horizontal = 16.dp,
+                    vertical = 10.dp
+                ),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(
+                    items = TeacherToolsSection.entries.toList(),
+                    key = { it.name }
+                ) { section ->
+                    FilterChip(
+                        selected = state.section == section,
+                        onClick = { onSelectSection(section) },
+                        label = { Text(section.label) }
+                    )
                 }
             }
-            Spacer(Modifier.height(8.dp))
+
             when (state.section) {
-                TeacherToolsSection.STUDENTS -> StudentsContent(state, { showStudentDialog = true }, onDeleteStudent)
-                TeacherToolsSection.ATTENDANCE -> AttendanceContent(state, onPreviousDay, onNextDay, onSetAttendance)
-                TeacherToolsSection.GRADES -> GradesContent(state, onSelectStudent, { showGradeDialog = true }, onDeleteGradeRecord)
-                TeacherToolsSection.REPORTS -> ReportsContent(state) { reportLauncher.launch("تقرير الطلاب.pdf") }
+                TeacherToolsSection.STUDENTS -> StudentsContent(
+                    state = state,
+                    onAdd = { showStudentDialog = true },
+                    onDelete = onDeleteStudent
+                )
+
+                TeacherToolsSection.ATTENDANCE -> AttendanceContent(
+                    state = state,
+                    onPreviousDay = onPreviousDay,
+                    onNextDay = onNextDay,
+                    onSetAttendance = onSetAttendance
+                )
+
+                TeacherToolsSection.GRADES -> GradesContent(
+                    state = state,
+                    onSelectStudent = onSelectStudent,
+                    onAdd = { showGradeDialog = true },
+                    onDelete = onDeleteGradeRecord
+                )
+
+                TeacherToolsSection.REPORTS -> ReportsContent(
+                    state = state,
+                    onExport = {
+                        reportLauncher.launch("تقرير الطلاب.pdf")
+                    }
+                )
             }
         }
     }
-    if (showStudentDialog) AddStudentDialog(state.grades, { showStudentDialog = false }) { name, number, gradeId -> onAddStudent(name, number, gradeId); showStudentDialog = false }
-    if (showGradeDialog && state.selectedStudentId != null) AddGradeDialog({ showGradeDialog = false }) { title, score, maxScore -> onAddGradeRecord(state.selectedStudentId!!, title, score, maxScore); showGradeDialog = false }
+
+    if (showStudentDialog) {
+        AddStudentDialog(
+            grades = state.grades,
+            onDismiss = { showStudentDialog = false },
+            onSave = { name, number, gradeId ->
+                onAddStudent(name, number, gradeId)
+                showStudentDialog = false
+            }
+        )
+    }
+
+    if (showGradeDialog) {
+        val studentId = state.selectedStudentId
+
+        if (studentId != null) {
+            AddGradeDialog(
+                onDismiss = { showGradeDialog = false },
+                onSave = { title, score, maxScore ->
+                    onAddGradeRecord(
+                        studentId,
+                        title,
+                        score,
+                        maxScore
+                    )
+                    showGradeDialog = false
+                }
+            )
+        }
+    }
 }
 
 @Composable
