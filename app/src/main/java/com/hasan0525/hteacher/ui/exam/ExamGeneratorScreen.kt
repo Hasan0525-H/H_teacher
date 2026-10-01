@@ -136,7 +136,7 @@ private fun ExamGeneratorScreen(
             item {
                 SelectionRow(
                     title = "المادة",
-                    emptyText = "أضف مادة من قسم المناهج أولًا",
+                    emptyText = "أضف مادة",
                     items = state.subjects.map { it.id to it.name },
                     selectedId = state.selectedSubjectId,
                     onSelect = onSelectSubject
@@ -332,9 +332,9 @@ private fun ExamGeneratorScreen(
                         ) {
                             Text(
                                 if (state.isAiGenerating) {
-                                    "جارٍ توليد الأسئلة..."
+                                    "جارٍ التوليد..."
                                 } else {
-                                    "توليد أسئلة بالذكاء الاصطناعي"
+                                    "توليد بالذكاء الاصطناعي"
                                 }
                             )
                         }
@@ -342,13 +342,13 @@ private fun ExamGeneratorScreen(
                         Text(
                             text = when {
                                 !state.aiConfigured ->
-                                    "AI غير مفعّل في هذا البناء."
+                                    "AI غير مفعّل"
                                 state.selectedCurriculumId == null ->
-                                    "اختر منهجًا محددًا لاستخدام AI."
+                                    "اختر منهجًا"
                                 state.indexedLessonCount == 0 ->
-                                    "أضف نص الدروس من فهرسة المنهج أولًا."
+                                    "فهرسة المنهج أولًا"
                                 else ->
-                                    "الدروس الجاهزة للذكاء الاصطناعي: " +
+                                    "الدروس: " +
                                         state.indexedLessonCount
                             },
                             style = MaterialTheme.typography.bodySmall,
@@ -612,7 +612,7 @@ private fun QuestionBankDialog(
 
                 if (questions.isEmpty()) {
                     Text(
-                        text = "لا توجد أسئلة محفوظة لهذه المادة.",
+                        text = "لا توجد أسئلة",
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
