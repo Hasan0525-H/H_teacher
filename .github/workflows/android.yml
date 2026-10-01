@@ -40,6 +40,9 @@ jobs:
           AI_GATEWAY_URL: ${{ vars.AI_GATEWAY_URL }}
         run: gradle :app:assembleDebug --stacktrace
 
+      - name: Compile instrumented PDF import test
+        run: gradle :app:assembleDebugAndroidTest --stacktrace
+
       - name: Build release APK
         env:
           AI_GATEWAY_URL: ${{ vars.AI_GATEWAY_URL }}

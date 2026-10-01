@@ -13,7 +13,7 @@ import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.Intents.intending
 import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
 import androidx.test.espresso.intent.Intents.intended
-import androidx.test.espresso.intent.ActivityResult
+import android.app.Instrumentation.ActivityResult
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -50,7 +50,7 @@ class CurriculumPdfImportTest {
             }
             compose.onNodeWithText("اسم مادة جديدة").performTextInput(subject)
             compose.onNodeWithText("اسم صف جديد").performTextInput(grade)
-            compose.onNodeWithText("حفظ المنهج").onFirst().performClick()
+            compose.onNodeWithText("حفظ المنهج").performClick()
 
             val app = compose.activity.application as HTeacherApplication
             var savedPath = ""

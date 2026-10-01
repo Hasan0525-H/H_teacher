@@ -32,11 +32,14 @@ class PdfImportTestProvider : ContentProvider() {
 
     override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor {
         val path = File(requireNotNull(context).cacheDir, uri.lastPathSegment ?: "sample.pdf")
-        PdfDocument().use { document ->
+        val document = PdfDocument()
+        try {
             val page = document.startPage(PdfDocument.PageInfo.Builder(400, 500, 1).create())
             page.canvas.drawText("Real generated PDF", 48f, 90f, android.graphics.Paint())
             document.finishPage(page)
-            path.outputStream().use(document::writeTo)
+            path.outputStream().use { output -> document.writeTo(output) }
+        } finally {
+            document.close()
         }
         return ParcelFileDescriptor.open(path, ParcelFileDescriptor.MODE_READ_ONLY)
     }
