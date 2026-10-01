@@ -198,7 +198,7 @@ private fun PortfolioScreen(
                         )
                     ) {
                         Text(
-                            text = "لا توجد عناصر في هذا التصنيف.",
+                            text = "لا توجد عناصر",
                             modifier = Modifier.padding(18.dp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -327,7 +327,7 @@ private fun ProfileCard(
                 profile.jobTitle.isBlank()
             ) {
                 Text(
-                    text = "أضف بياناتك المهنية لتظهر في ملف الإنجاز.",
+                    text = "لا توجد بيانات مهنية",
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
