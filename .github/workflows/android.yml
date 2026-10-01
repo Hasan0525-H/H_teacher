@@ -114,8 +114,12 @@ jobs:
       - name: Test selecting and persisting a real PDF
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 29
           arch: x86_64
-          profile: pixel_6
+          profile: pixel_2
           disable-animations: true
-          script: gradle :app:connectedDebugAndroidTest --stacktrace
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot-save -camera-back none
+          script: |
+            adb wait-for-device
+            adb shell getprop ro.build.version.release
+            gradle :app:connectedDebugAndroidTest --stacktrace
