@@ -12,7 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -78,197 +78,77 @@ private fun PortfolioScreen(
     var showNewItem by remember { mutableStateOf(false) }
     var editingItem by remember { mutableStateOf<PortfolioItemUi?>(null) }
     var pendingAttachmentItemId by remember { mutableLongStateOf(0L) }
-
-    val attachmentPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null && pendingAttachmentItemId > 0L) {
-            onAddAttachment(pendingAttachmentItemId, uri)
-        }
+    val attachmentPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null && pendingAttachmentItemId > 0L) onAddAttachment(pendingAttachmentItemId, uri)
         pendingAttachmentItemId = 0L
     }
-
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/pdf")
-    ) { uri ->
-        if (uri != null) onExport(uri)
-    }
-
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri -> if (uri != null) onExport(uri) }
     LaunchedEffect(state.message) {
-        val current = state.message ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(current)
+        val message = state.message ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
         onMessageShown()
     }
-
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "ملف الإنجاز",
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.Outlined.ArrowBack,
-                            contentDescription = "رجوع"
-                        )
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
+        LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, null) }
+                    Column(Modifier.weight(1f)) {
+                        Text("ملف الإنجاز", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text("${state.items.size} عنصر", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                },
-                actions = {
-                    TextButton(
-                        enabled = !state.isExporting,
-                        onClick = {
-                            exportLauncher.launch("ملف الإنجاز.pdf")
+                    FilledIconButton(enabled = !state.isExporting, onClick = { exportLauncher.launch("ملف الإنجاز.pdf") }) { Icon(Icons.Outlined.PictureAsPdf, "PDF") }
+                }
+            }
+            item {
+                Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+                    Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface) { Icon(Icons.Outlined.Badge, null, Modifier.padding(12.dp), tint = MaterialTheme.colorScheme.primary) }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(state.profile.teacherName.ifBlank { "ملف المعلم" }, fontWeight = FontWeight.Bold)
+                            Text(state.profile.jobTitle.ifBlank { "بيانات مهنية" }, style = MaterialTheme.typography.bodySmall)
                         }
-                    ) {
-                        Text("PDF")
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            item {
-                ProfileCard(
-                    profile = state.profile,
-                    onEdit = { showProfileEditor = true }
-                )
-            }
-
-            item {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    item {
-                        FilterChip(
-                            selected = state.selectedCategory == null,
-                            onClick = { onSelectCategory(null) },
-                            label = { Text("الكل") }
-                        )
-                    }
-
-                    items(
-                        items = PortfolioCategory.entries.toList(),
-                        key = { it.storageKey }
-                    ) { category ->
-                        FilterChip(
-                            selected = state.selectedCategory == category,
-                            onClick = {
-                                onSelectCategory(category)
-                            },
-                            label = { Text(category.label) }
-                        )
+                        IconButton(onClick = { showProfileEditor = true }) { Icon(Icons.Outlined.Edit, "تعديل") }
                     }
                 }
             }
-
             item {
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { showNewItem = true }
-                ) {
-                    Text("إضافة عنصر لملف الإنجاز")
-                }
-
-                if (state.isExporting) {
-                    Spacer(Modifier.height(8.dp))
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item { FilterChip(state.selectedCategory == null, { onSelectCategory(null) }, label = { Text("الكل") }) }
+                    items(PortfolioCategory.entries.toList(), key = { it.storageKey }) { category -> FilterChip(state.selectedCategory == category, { onSelectCategory(category) }, label = { Text(category.label) }) }
                 }
             }
-
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(Modifier.weight(1f), onClick = { showNewItem = true }) { Icon(Icons.Outlined.Add, null); Spacer(Modifier.width(6.dp)); Text("إضافة") }
+                    OutlinedButton(Modifier.weight(1f), enabled = !state.isExporting, onClick = { exportLauncher.launch("ملف الإنجاز.pdf") }) { Icon(Icons.Outlined.PictureAsPdf, null); Spacer(Modifier.width(6.dp)); Text("تصدير") }
+                }
+            }
+            if (state.isExporting) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
             if (state.items.isEmpty()) {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(22.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        Text(
-                            text = "لا توجد عناصر",
-                            modifier = Modifier.padding(18.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                item { EmptyPortfolioState() }
             } else {
-                items(
-                    items = state.items,
-                    key = { it.item.id }
-                ) { ui ->
-                    PortfolioItemCard(
-                        ui = ui,
-                        onEdit = { editingItem = ui },
-                        onDelete = { onDeleteItem(ui.item.id) },
-                        onAddAttachment = {
-                            pendingAttachmentItemId = ui.item.id
-                            attachmentPicker.launch(arrayOf("*/*"))
-                        },
-                        onDeleteAttachment = onDeleteAttachment
-                    )
+                items(state.items, key = { it.item.id }) { ui ->
+                    PortfolioItemCard(ui, { editingItem = ui }, { onDeleteItem(ui.item.id) }, { pendingAttachmentItemId = ui.item.id; attachmentPicker.launch(arrayOf("*/*")) }, onDeleteAttachment)
                 }
             }
         }
     }
-
-    if (showProfileEditor) {
-        ProfileEditorDialog(
-            profile = state.profile,
-            onDismiss = { showProfileEditor = false },
-            onSave = { name, school, specialization, title ->
-                onSaveProfile(name, school, specialization, title)
-                showProfileEditor = false
-            }
-        )
-    }
-
-    if (showNewItem) {
-        PortfolioItemEditorDialog(
-            initialCategory = state.selectedCategory
-                ?: PortfolioCategory.PROFESSIONAL_EVIDENCE,
-            initialTitle = "",
-            initialDescription = "",
-            dialogTitle = "إضافة عنصر",
-            onDismiss = { showNewItem = false },
-            onSave = { category, title, description ->
-                onAddItem(category, title, description)
-                showNewItem = false
-            }
-        )
-    }
-
+    if (showProfileEditor) ProfileEditorDialog(state.profile, { showProfileEditor = false }) { name, school, specialization, title -> onSaveProfile(name, school, specialization, title); showProfileEditor = false }
+    if (showNewItem) PortfolioItemEditorDialog(state.selectedCategory ?: PortfolioCategory.PROFESSIONAL_EVIDENCE, "", "", "إضافة عنصر", { showNewItem = false }) { category, title, description -> onAddItem(category, title, description); showNewItem = false }
     editingItem?.let { ui ->
-        PortfolioItemEditorDialog(
-            initialCategory = PortfolioCategory.fromStorage(
-                ui.item.category
-            ),
-            initialTitle = ui.item.title,
-            initialDescription = ui.item.description,
-            dialogTitle = "تعديل العنصر",
-            onDismiss = { editingItem = null },
-            onSave = { category, title, description ->
-                onUpdateItem(
-                    ui.item.id,
-                    category,
-                    title,
-                    description
-                )
-                editingItem = null
-            }
-        )
+        PortfolioItemEditorDialog(PortfolioCategory.fromStorage(ui.item.category), ui.item.title, ui.item.description, "تعديل العنصر", { editingItem = null }) { category, title, description -> onUpdateItem(ui.item.id, category, title, description); editingItem = null }
+    }
+}
+@Composable
+private fun EmptyPortfolioState() {
+    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp)) {
+        Column(Modifier.fillMaxWidth().padding(30.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(Icons.Outlined.FolderOpen, null, Modifier.size(46.dp), tint = MaterialTheme.colorScheme.primary)
+            Text("ملف الإنجاز فارغ", fontWeight = FontWeight.Bold)
+            Text("أضف أول عنصر", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 
