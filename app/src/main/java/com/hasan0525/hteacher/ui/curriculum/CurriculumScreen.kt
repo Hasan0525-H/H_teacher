@@ -12,7 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -115,206 +115,92 @@ private fun CurriculumScreen(
     var showGradeManager by remember { mutableStateOf(false) }
     var editingCurriculum by remember { mutableStateOf<CurriculumEntity?>(null) }
     var indexingCurriculum by remember { mutableStateOf<CurriculumEntity?>(null) }
-
-    val pdfPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) onImportPdf(uri)
-    }
+    val pdfPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) onImportPdf(uri) }
 
     LaunchedEffect(state.message) {
-        val currentMessage = state.message ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(currentMessage)
+        val message = state.message ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
         onMessageShown()
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "المناهج",
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.Outlined.ArrowBack,
-                            contentDescription = "رجوع"
-                        )
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             item {
-                SelectorSection(
-                    title = "المادة",
-                    emptyText = "أضف مادة للبدء",
-                    labels = state.subjects.map { it.id to it.name },
-                    selectedId = state.selectedSubjectId,
-                    onSelect = onSelectSubject,
-                    onManage = { showSubjectManager = true }
-                )
-            }
-
-            item {
-                SelectorSection(
-                    title = "الصف",
-                    emptyText = "أضف صفًا للبدء",
-                    labels = state.grades.map { it.id to it.name },
-                    selectedId = state.selectedGradeId,
-                    onSelect = onSelectGrade,
-                    onManage = { showGradeManager = true }
-                )
-            }
-
-            item {
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = state.selectedSubjectId != null &&
-                        state.selectedGradeId != null &&
-                        !state.isImporting,
-                    onClick = {
-                        pdfPicker.launch(arrayOf("application/pdf"))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, null) }
+                    Column(Modifier.weight(1f)) {
+                        Text("المناهج", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text("${state.curricula.size} منهج محفوظ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                ) {
-                    Text(
-                        if (state.isImporting) {
-                            "جارٍ الحفظ..."
-                        } else {
-                            "إضافة PDF"
-                        }
-                    )
+                    FilledIconButton(
+                        onClick = { pdfPicker.launch(arrayOf("application/pdf")) },
+                        enabled = state.selectedSubjectId != null && state.selectedGradeId != null && !state.isImporting
+                    ) { Icon(Icons.Outlined.Add, "إضافة") }
                 }
-
-                if (state.isImporting) {
-                    Spacer(Modifier.height(8.dp))
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
-
             item {
-                Text(
-                    text = "المناهج المحفوظة",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
+                Card(shape = RoundedCornerShape(28.dp)) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Text("اختيار المنهج", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        SelectorSection("المادة", "أضف مادة", state.subjects.map { it.id to it.name }, state.selectedSubjectId, onSelectSubject) { showSubjectManager = true }
+                        SelectorSection("الصف", "أضف صفًا", state.grades.map { it.id to it.name }, state.selectedGradeId, onSelectGrade) { showGradeManager = true }
+                    }
+                }
             }
-
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    StatTile(Modifier.weight(1f), Icons.Outlined.MenuBook, "المناهج", state.curricula.size.toString())
+                    StatTile(Modifier.weight(1f), Icons.Outlined.Folder, "الوحدات", state.units.size.toString())
+                    StatTile(Modifier.weight(1f), Icons.Outlined.PlayLesson, "الدروس", state.lessons.size.toString())
+                }
+            }
+            item { Text("مكتبة المناهج", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
             if (state.curricula.isEmpty()) {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(22.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        Text(
-                            text = "لا يوجد منهج",
-                            modifier = Modifier.padding(18.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                item { EmptyLibraryCard(Icons.Outlined.PictureAsPdf, "لا توجد مناهج", "استورد أول ملف PDF") }
             } else {
-                items(
-                    items = state.curricula,
-                    key = { it.id }
-                ) { curriculum ->
+                items(state.curricula, key = { it.id }) { curriculum ->
                     CurriculumCard(
                         curriculum = curriculum,
-                        onOpen = {
-                            val path = curriculum.localFileUri
-                            if (!path.isNullOrBlank()) {
-                                onOpenPdf(path, curriculum.title)
-                            }
-                        },
-                        onRename = {
-                            editingCurriculum = curriculum
-                        },
-                        onIndex = {
-                            indexingCurriculum = curriculum
-                        },
-                        onDelete = {
-                            onDeleteCurriculum(curriculum.id)
-                        }
+                        onOpen = { curriculum.localFileUri?.takeIf { it.isNotBlank() }?.let { onOpenPdf(it, curriculum.title) } },
+                        onRename = { editingCurriculum = curriculum },
+                        onIndex = { indexingCurriculum = curriculum },
+                        onDelete = { onDeleteCurriculum(curriculum.id) }
                     )
                 }
             }
         }
     }
-
-    if (showSubjectManager) {
-        EntityManagerDialog(
-            title = "إدارة المواد",
-            itemLabel = "المادة",
-            items = state.subjects.map { it.id to it.name },
-            onDismiss = { showSubjectManager = false },
-            onAdd = onAddSubject,
-            onRename = onRenameSubject,
-            onDelete = onDeleteSubject
-        )
-    }
-
-    if (showGradeManager) {
-        EntityManagerDialog(
-            title = "إدارة الصفوف",
-            itemLabel = "الصف",
-            items = state.grades.map { it.id to it.name },
-            onDismiss = { showGradeManager = false },
-            onAdd = onAddGrade,
-            onRename = onRenameGrade,
-            onDelete = onDeleteGrade
-        )
-    }
-
+    if (showSubjectManager) EntityManagerDialog("إدارة المواد", "المادة", state.subjects.map { it.id to it.name }, { showSubjectManager = false }, onAddSubject, onRenameSubject, onDeleteSubject)
+    if (showGradeManager) EntityManagerDialog("إدارة الصفوف", "الصف", state.grades.map { it.id to it.name }, { showGradeManager = false }, onAddGrade, onRenameGrade, onDeleteGrade)
     indexingCurriculum?.let { curriculum ->
-        CurriculumIndexDialog(
-            curriculum = curriculum,
-            units = state.units.filter {
-                it.curriculumId == curriculum.id
-            },
-            lessons = state.lessons,
-            onDismiss = { indexingCurriculum = null },
-            onAddUnit = onAddUnit,
-            onRenameUnit = onRenameUnit,
-            onDeleteUnit = onDeleteUnit,
-            onAddLesson = onAddLesson,
-            onRenameLesson = onRenameLesson,
-            onDeleteLesson = onDeleteLesson
-        )
+        CurriculumIndexDialog(curriculum, state.units.filter { it.curriculumId == curriculum.id }, state.lessons, { indexingCurriculum = null }, onAddUnit, onRenameUnit, onDeleteUnit, onAddLesson, onRenameLesson, onDeleteLesson)
     }
-
     editingCurriculum?.let { curriculum ->
-        NameEditorDialog(
-            title = "تعديل اسم المنهج",
-            initialValue = curriculum.title,
-            onDismiss = { editingCurriculum = null },
-            onConfirm = { value ->
-                onRenameCurriculum(curriculum.id, value)
-                editingCurriculum = null
-            }
-        )
+        NameEditorDialog("تعديل اسم المنهج", curriculum.title, { editingCurriculum = null }) { value -> onRenameCurriculum(curriculum.id, value); editingCurriculum = null }
+    }
+}
+@Composable
+private fun StatTile(modifier: Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String) {
+    Card(modifier, shape = RoundedCornerShape(22.dp)) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
+            Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+@Composable
+private fun EmptyLibraryCard(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, action: String) {
+    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(26.dp)) {
+        Column(Modifier.fillMaxWidth().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(icon, null, Modifier.size(42.dp), tint = MaterialTheme.colorScheme.primary)
+            Text(title, fontWeight = FontWeight.Bold)
+            Text(action, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 
