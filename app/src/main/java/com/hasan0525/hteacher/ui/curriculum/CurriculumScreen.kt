@@ -125,7 +125,7 @@ private fun CurriculumScreen(
     var indexingCurriculum by remember { mutableStateOf<CurriculumEntity?>(null) }
 
     val pdfPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let(onImportPdf) }
 
     LaunchedEffect(state.message) {
@@ -222,10 +222,14 @@ private fun CurriculumScreen(
                 Surface(
                     Modifier.fillMaxWidth().height(112.dp)
                         .clickable(
-                            enabled = state.selectedSubjectId != null &&
-                                state.selectedGradeId != null &&
-                                !state.isImporting
-                        ) { pdfPicker.launch("application/pdf") },
+                            enabled = !state.isImporting
+                        ) {
+                            when {
+                                state.selectedSubjectId == null -> showSubjectManager = true
+                                state.selectedGradeId == null -> showGradeManager = true
+                                else -> pdfPicker.launch(arrayOf("application/pdf"))
+                            }
+                        },
                     shape = RoundedCornerShape(26.dp),
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
@@ -245,7 +249,12 @@ private fun CurriculumScreen(
                         Column(Modifier.weight(1f)) {
                             Text("إضافة منهج PDF", fontWeight = FontWeight.Bold)
                             Text(
-                                if (state.isImporting) "جارٍ الحفظ..." else "احفظه داخل الجهاز واستخدمه أوفلاين",
+                                when {
+                                    state.isImporting -> "جارٍ الحفظ..."
+                                    state.selectedSubjectId == null -> "أضف مادة أولًا"
+                                    state.selectedGradeId == null -> "أضف صفًا أولًا"
+                                    else -> "اختر ملف PDF من الجهاز"
+                                },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
