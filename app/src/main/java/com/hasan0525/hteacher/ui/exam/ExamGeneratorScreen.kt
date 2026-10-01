@@ -9,11 +9,14 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Assignment
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -86,270 +89,102 @@ private fun ExamGeneratorScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     var showQuestionBank by remember { mutableStateOf(false) }
-
-    val questionsPdfLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/pdf")
-    ) { uri ->
-        if (uri != null) onExport(uri, false)
-    }
-
-    val answersPdfLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/pdf")
-    ) { uri ->
-        if (uri != null) onExport(uri, true)
-    }
+    val questionsPdfLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri -> if (uri != null) onExport(uri, false) }
+    val answersPdfLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri -> if (uri != null) onExport(uri, true) }
 
     LaunchedEffect(state.message) {
-        val currentMessage = state.message ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(currentMessage)
-        onMessageShown()
+        state.message?.let { snackbarHostState.showSnackbar(it); onMessageShown() }
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        text = "مولد الاختبارات",
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.Outlined.ArrowBack,
-                            contentDescription = "رجوع"
-                        )
-                    }
-                }
+                title = { Text("الاختبارات", fontWeight = FontWeight.Bold) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, "رجوع") } }
             )
         }
-    ) { innerPadding ->
+    ) { padding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 18.dp),
+            Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(18.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                SelectionRow(
-                    title = "المادة",
-                    emptyText = "أضف مادة",
-                    items = state.subjects.map { it.id to it.name },
-                    selectedId = state.selectedSubjectId,
-                    onSelect = onSelectSubject
-                )
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("أنشئ اختبارك", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text("حدد المطلوب ثم أنشئ النموذج", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
+                        Icon(Icons.Outlined.Assignment, null, Modifier.padding(12.dp).size(25.dp), tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
             }
-
             item {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text(
-                        text = "المنهج",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        item {
-                            FilterChip(
-                                selected = state.selectedCurriculumId == null,
-                                onClick = { onSelectCurriculum(null) },
-                                label = { Text("كل المناهج") }
-                            )
-                        }
-
-                        items(
-                            items = state.curricula,
-                            key = { it.id }
-                        ) { curriculum ->
-                            FilterChip(
-                                selected = state.selectedCurriculumId == curriculum.id,
-                                onClick = {
-                                    onSelectCurriculum(curriculum.id)
-                                },
-                                label = {
-                                    Text(
-                                        text = curriculum.title,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            )
+                Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(26.dp), color = MaterialTheme.colorScheme.surface, tonalElevation = 1.dp) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Text("المصدر", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        SelectionRow("المادة", "أضف مادة", state.subjects.map { it.id to it.name }, state.selectedSubjectId, onSelectSubject)
+                        Text("المنهج", fontWeight = FontWeight.Bold)
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            item {
+                                FilterChip(state.selectedCurriculumId == null, { onSelectCurriculum(null) }, label = { Text("كل المناهج") })
+                            }
+                            items(state.curricula, key = { it.id }) { curriculum ->
+                                FilterChip(state.selectedCurriculumId == curriculum.id, { onSelectCurriculum(curriculum.id) }, label = { Text(curriculum.title, maxLines = 1, overflow = TextOverflow.Ellipsis) })
+                            }
                         }
                     }
                 }
             }
-
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        Text(
-                            text = "إعداد الاختبار",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        OutlinedTextField(
-                            modifier = Modifier.fillMaxWidth(),
-                            value = state.title,
-                            onValueChange = onTitleChange,
-                            singleLine = true,
-                            label = { Text("عنوان الاختبار") }
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            OutlinedTextField(
-                                modifier = Modifier.weight(1f),
-                                value = state.questionCount,
-                                onValueChange = onQuestionCountChange,
-                                singleLine = true,
-                                label = { Text("عدد الأسئلة") },
-                                keyboardOptions = KeyboardOptions(
-                                    keyboardType = KeyboardType.Number
-                                )
-                            )
-
-                            OutlinedTextField(
-                                modifier = Modifier.weight(1f),
-                                value = state.totalMarks,
-                                onValueChange = onTotalMarksChange,
-                                singleLine = true,
-                                label = { Text("الدرجة") },
-                                keyboardOptions = KeyboardOptions(
-                                    keyboardType = KeyboardType.Number
-                                )
-                            )
+                Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(26.dp), color = MaterialTheme.colorScheme.surface, tonalElevation = 1.dp) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("مواصفات الاختبار", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            Icon(Icons.Outlined.Tune, null, tint = MaterialTheme.colorScheme.primary)
                         }
-
-                        Text(
-                            text = "أنواع الأسئلة",
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(
-                                items = QuestionType.entries.toList(),
-                                key = { it.storageKey }
-                            ) { type ->
-                                FilterChip(
-                                    selected = type in state.selectedTypes,
-                                    onClick = { onToggleType(type) },
-                                    label = { Text(type.label) }
-                                )
+                        OutlinedTextField(Modifier.fillMaxWidth(), state.title, onTitleChange, singleLine = true, label = { Text("عنوان الاختبار") })
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            OutlinedTextField(Modifier.weight(1f), state.questionCount, onQuestionCountChange, singleLine = true, label = { Text("الأسئلة") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                            OutlinedTextField(Modifier.weight(1f), state.totalMarks, onTotalMarksChange, singleLine = true, label = { Text("الدرجات") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                        }
+                        Text("نوع السؤال", fontWeight = FontWeight.Bold)
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(QuestionType.entries.toList(), key = { it.storageKey }) { type ->
+                                FilterChip(type in state.selectedTypes, { onToggleType(type) }, label = { Text(type.label) })
                             }
                         }
-
+                        Text("المستوى", fontWeight = FontWeight.Bold)
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            item { FilterChip(state.selectedDifficulty == null, { onSelectDifficulty(null) }, label = { Text("متنوع") }) }
+                            items(Difficulty.entries.toList(), key = { it.storageKey }) { difficulty ->
+                                FilterChip(state.selectedDifficulty == difficulty, { onSelectDifficulty(difficulty) }, label = { Text(difficulty.label) })
+                            }
+                        }
+                    }
+                }
+            }
+            item {
+                Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(26.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("إنشاء", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Button(Modifier.weight(1f), onClick = onGenerate, enabled = state.selectedSubjectId != null) { Text("إنشاء") }
+                            OutlinedButton(Modifier.weight(1f), onClick = { showQuestionBank = true }) { Text("بنك الأسئلة") }
+                        }
+                        Button(Modifier.fillMaxWidth(), enabled = state.aiConfigured && state.selectedCurriculumId != null && state.indexedLessonCount > 0 && !state.isAiGenerating, onClick = onGenerateAi) {
+                            Text(if (state.isAiGenerating) "جارٍ التوليد..." else "توليد بالذكاء الاصطناعي")
+                        }
+                        if (state.isAiGenerating) LinearProgressIndicator(Modifier.fillMaxWidth())
                         Text(
-                            text = "الصعوبة",
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            item {
-                                FilterChip(
-                                    selected = state.selectedDifficulty == null,
-                                    onClick = { onSelectDifficulty(null) },
-                                    label = { Text("متنوع") }
-                                )
-                            }
-
-                            items(
-                                items = Difficulty.entries.toList(),
-                                key = { it.storageKey }
-                            ) { difficulty ->
-                                FilterChip(
-                                    selected = state.selectedDifficulty == difficulty,
-                                    onClick = {
-                                        onSelectDifficulty(difficulty)
-                                    },
-                                    label = {
-                                        Text(difficulty.label)
-                                    }
-                                )
-                            }
-                        }
-
-                        Text(
-                            text = "الأسئلة المتاحة: " + state.questions.size,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            OutlinedButton(
-                                modifier = Modifier.weight(1f),
-                                onClick = {
-                                    showQuestionBank = true
-                                }
-                            ) {
-                                Text("بنك الأسئلة")
-                            }
-
-                            Button(
-                                modifier = Modifier.weight(1f),
-                                onClick = onGenerate,
-                                enabled = state.selectedSubjectId != null
-                            ) {
-                                Text("إنشاء الاختبار")
-                            }
-                        }
-
-                        if (state.isAiGenerating) {
-                            LinearProgressIndicator(
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-
-                        Button(
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = state.aiConfigured &&
-                                state.selectedCurriculumId != null &&
-                                state.indexedLessonCount > 0 &&
-                                !state.isAiGenerating,
-                            onClick = onGenerateAi
-                        ) {
-                            Text(
-                                if (state.isAiGenerating) {
-                                    "جارٍ التوليد..."
-                                } else {
-                                    "توليد بالذكاء الاصطناعي"
-                                }
-                            )
-                        }
-
-                        Text(
-                            text = when {
-                                !state.aiConfigured ->
-                                    "AI غير مفعّل"
-                                state.selectedCurriculumId == null ->
-                                    "اختر منهجًا"
-                                state.indexedLessonCount == 0 ->
-                                    "فهرسة المنهج أولًا"
-                                else ->
-                                    "الدروس: " +
-                                        state.indexedLessonCount
+                            when {
+                                !state.aiConfigured -> "الذكاء الاصطناعي غير مفعّل"
+                                state.selectedCurriculumId == null -> "اختر منهجًا للتوليد الذكي"
+                                state.indexedLessonCount == 0 -> "فهرس المنهج أولًا"
+                                else -> "الدروس المفهرسة: ${state.indexedLessonCount}"
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -357,63 +192,23 @@ private fun ExamGeneratorScreen(
                     }
                 }
             }
-
             state.generatedExam?.let { exam ->
                 item {
-                    GeneratedExamCard(
-                        exam = exam,
-                        isExporting = state.isExporting,
-                        onExportQuestions = {
-                            questionsPdfLauncher.launch(
-                                safeFileName(exam.title + " - الأسئلة.pdf")
-                            )
-                        },
-                        onExportAnswers = {
-                            answersPdfLauncher.launch(
-                                safeFileName(exam.title + " - الإجابة.pdf")
-                            )
-                        }
-                    )
+                    GeneratedExamCard(exam, state.isExporting, { questionsPdfLauncher.launch(safeFileName(exam.title + " - الأسئلة.pdf")) }, { answersPdfLauncher.launch(safeFileName(exam.title + " - الإجابة.pdf")) })
                 }
-
-                items(
-                    items = exam.questions,
-                    key = { it.number }
-                ) { question ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                text = "السؤال " + question.number +
-                                    " - " + question.type.label,
-                                fontWeight = FontWeight.Bold
-                            )
+                items(exam.questions, key = { it.number }) { question ->
+                    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface, tonalElevation = 1.dp) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("السؤال ${question.number}", fontWeight = FontWeight.Bold)
                             Text(question.questionText)
-                            Text(
-                                text = "الدرجة: " + formatMark(question.mark),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Text("${question.type.label} · ${formatMark(question.mark)} درجة", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
             }
         }
     }
-
-    if (showQuestionBank) {
-        QuestionBankDialog(
-            questions = state.questions,
-            onDismiss = { showQuestionBank = false },
-            onAdd = onAddQuestion,
-            onDelete = onDeleteQuestion
-        )
-    }
+    if (showQuestionBank) QuestionBankDialog(state.questions, { showQuestionBank = false }, onAddQuestion, onDeleteQuestion)
 }
 
 @Composable
