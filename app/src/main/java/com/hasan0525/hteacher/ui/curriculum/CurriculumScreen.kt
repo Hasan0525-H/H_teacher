@@ -9,10 +9,16 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.PictureAsPdf
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -118,147 +124,223 @@ private fun CurriculumScreen(
 
     val pdfPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) onImportPdf(uri)
-    }
+    ) { uri -> uri?.let(onImportPdf) }
 
     LaunchedEffect(state.message) {
-        val currentMessage = state.message ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(currentMessage)
-        onMessageShown()
+        state.message?.let {
+            snackbarHostState.showSnackbar(it)
+            onMessageShown()
+        }
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        text = "المناهج",
-                        fontWeight = FontWeight.Bold
-                    )
-                },
+                title = { Text("المناهج", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.Outlined.ArrowBack,
-                            contentDescription = "رجوع"
-                        )
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = "رجوع")
                     }
                 }
             )
         }
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 18.dp),
+            Modifier.fillMaxSize().padding(innerPadding),
+            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                SelectorSection(
-                    title = "المادة",
-                    emptyText = "أضف مادة للبدء",
-                    labels = state.subjects.map { it.id to it.name },
-                    selectedId = state.selectedSubjectId,
-                    onSelect = onSelectSubject,
-                    onManage = { showSubjectManager = true }
-                )
-            }
-
-            item {
-                SelectorSection(
-                    title = "الصف",
-                    emptyText = "أضف صفًا للبدء",
-                    labels = state.grades.map { it.id to it.name },
-                    selectedId = state.selectedGradeId,
-                    onSelect = onSelectGrade,
-                    onManage = { showGradeManager = true }
-                )
-            }
-
-            item {
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = state.selectedSubjectId != null &&
-                        state.selectedGradeId != null &&
-                        !state.isImporting,
-                    onClick = {
-                        pdfPicker.launch(arrayOf("application/pdf"))
-                    }
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        if (state.isImporting) {
-                            "جارٍ الحفظ..."
-                        } else {
-                            "إضافة PDF"
-                        }
-                    )
+                    Column(Modifier.weight(1f)) {
+                        Text("مكتب المناهج", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text(
+                            "اختر المادة والصف ثم أضف منهجك",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(
+                        onClick = { showSubjectManager = true },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(Icons.Outlined.Tune, contentDescription = "إدارة")
+                    }
                 }
+            }
 
+            item {
+                Surface(
+                    Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(26.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp
+                ) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
+                                Icon(
+                                    Icons.Outlined.MenuBook,
+                                    null,
+                                    Modifier.padding(11.dp).size(23.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Text("اختيار المنهج", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        }
+
+                        SelectorSection(
+                            title = "المادة",
+                            emptyText = "أضف مادة",
+                            labels = state.subjects.map { it.id to it.name },
+                            selectedId = state.selectedSubjectId,
+                            onSelect = onSelectSubject,
+                            onManage = { showSubjectManager = true }
+                        )
+
+                        SelectorSection(
+                            title = "الصف",
+                            emptyText = "أضف صفًا",
+                            labels = state.grades.map { it.id to it.name },
+                            selectedId = state.selectedGradeId,
+                            onSelect = onSelectGrade,
+                            onManage = { showGradeManager = true }
+                        )
+                    }
+                }
+            }
+
+            item {
+                Surface(
+                    Modifier.fillMaxWidth().height(112.dp)
+                        .clickable(
+                            enabled = state.selectedSubjectId != null &&
+                                state.selectedGradeId != null &&
+                                !state.isImporting
+                        ) { pdfPicker.launch(arrayOf("application/pdf")) },
+                    shape = RoundedCornerShape(26.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 18.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface) {
+                            Icon(
+                                Icons.Outlined.PictureAsPdf,
+                                null,
+                                Modifier.padding(12.dp).size(28.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Spacer(Modifier.width(14.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("إضافة منهج PDF", fontWeight = FontWeight.Bold)
+                            Text(
+                                if (state.isImporting) "جارٍ الحفظ..." else "احفظه داخل الجهاز واستخدمه أوفلاين",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(Icons.Outlined.Add, null, tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
                 if (state.isImporting) {
                     Spacer(Modifier.height(8.dp))
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    LinearProgressIndicator(Modifier.fillMaxWidth())
                 }
-
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
 
             item {
-                Text(
-                    text = "المناهج المحفوظة",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("المناهج المحفوظة", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    Text(
+                        state.curricula.size.toString(),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
 
             if (state.curricula.isEmpty()) {
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(22.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
+                    Surface(
+                        Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant
                     ) {
-                        Text(
-                            text = "لا يوجد منهج",
-                            modifier = Modifier.padding(18.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Column(
+                            Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(Icons.Outlined.MenuBook, null, Modifier.size(34.dp))
+                            Text("لا توجد مناهج بعد", fontWeight = FontWeight.Bold)
+                            Text(
+                                "أضف أول ملف PDF للبدء",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             } else {
-                items(
-                    items = state.curricula,
-                    key = { it.id }
-                ) { curriculum ->
-                    CurriculumCard(
-                        curriculum = curriculum,
-                        onOpen = {
-                            val path = curriculum.localFileUri
-                            if (!path.isNullOrBlank()) {
-                                onOpenPdf(path, curriculum.title)
+                items(state.curricula, key = { it.id }) { curriculum ->
+                    Surface(
+                        Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        tonalElevation = 1.dp
+                    ) {
+                        Row(
+                            Modifier.padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(17.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer
+                            ) {
+                                Icon(
+                                    Icons.Outlined.PictureAsPdf,
+                                    null,
+                                    Modifier.padding(12.dp).size(25.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
                             }
-                        },
-                        onRename = {
-                            editingCurriculum = curriculum
-                        },
-                        onIndex = {
-                            indexingCurriculum = curriculum
-                        },
-                        onDelete = {
-                            onDeleteCurriculum(curriculum.id)
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    curriculum.title,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    "منهج محفوظ على الجهاز",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            IconButton(
+                                enabled = !curriculum.localFileUri.isNullOrBlank(),
+                                onClick = {
+                                    curriculum.localFileUri?.takeIf { it.isNotBlank() }?.let {
+                                        onOpenPdf(it, curriculum.title)
+                                    }
+                                }
+                            ) {
+                                Icon(Icons.Outlined.FolderOpen, contentDescription = "فتح")
+                            }
+                            IconButton(onClick = { indexingCurriculum = curriculum }) {
+                                Icon(Icons.Outlined.Tune, contentDescription = "فهرسة")
+                            }
                         }
-                    )
+                    }
                 }
             }
         }
@@ -291,9 +373,7 @@ private fun CurriculumScreen(
     indexingCurriculum?.let { curriculum ->
         CurriculumIndexDialog(
             curriculum = curriculum,
-            units = state.units.filter {
-                it.curriculumId == curriculum.id
-            },
+            units = state.units.filter { it.curriculumId == curriculum.id },
             lessons = state.lessons,
             onDismiss = { indexingCurriculum = null },
             onAddUnit = onAddUnit,
@@ -310,8 +390,8 @@ private fun CurriculumScreen(
             title = "تعديل اسم المنهج",
             initialValue = curriculum.title,
             onDismiss = { editingCurriculum = null },
-            onConfirm = { value ->
-                onRenameCurriculum(curriculum.id, value)
+            onConfirm = {
+                onRenameCurriculum(curriculum.id, it)
                 editingCurriculum = null
             }
         )
