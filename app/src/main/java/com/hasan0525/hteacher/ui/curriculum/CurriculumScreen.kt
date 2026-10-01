@@ -190,9 +190,9 @@ private fun CurriculumScreen(
                 ) {
                     Text(
                         if (state.isImporting) {
-                            "جارٍ حفظ المنهج..."
+                            "جارٍ الحفظ..."
                         } else {
-                            "إضافة منهج PDF"
+                            "إضافة PDF"
                         }
                     )
                 }
@@ -206,7 +206,7 @@ private fun CurriculumScreen(
 
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    text = "يتم حفظ نسخة داخل التطبيق لتعمل دون إنترنت.",
+                    text = "",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -230,7 +230,7 @@ private fun CurriculumScreen(
                         )
                     ) {
                         Text(
-                            text = "لا يوجد منهج محفوظ للمادة والصف المحددين.",
+                            text = "لا يوجد منهج",
                             modifier = Modifier.padding(18.dp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
