@@ -92,34 +92,41 @@ jobs:
 
   curriculum-import-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 35
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
+
       - name: Enable KVM
         run: |
           sudo sh -c 'echo KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm" > /etc/udev/rules.d/99-kvm4all.rules'
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.6.0"
-      - name: Test selecting and persisting a real PDF
-        uses: reactivecircus/android-emulator-runner@v2
+
+      - name: Run PDF import persistence test on ATD
+        run: gradle :app:pixel2Api30DebugAndroidTest --stacktrace
+
+      - name: Upload PDF import test report
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          api-level: 29
-          arch: x86_64
-          profile: pixel_2
-          disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot-save -camera-back none
-          script: |
-            adb wait-for-device
-            adb shell getprop ro.build.version.release
-            gradle :app:connectedDebugAndroidTest --stacktrace
+          name: curriculum-pdf-import-test-report
+          path: |
+            app/build/reports/androidTests/**
+            app/build/outputs/androidTest-results/**
+          if-no-files-found: ignore
