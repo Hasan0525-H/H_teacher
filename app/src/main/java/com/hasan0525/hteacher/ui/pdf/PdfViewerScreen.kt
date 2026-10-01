@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -25,6 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.hasan0525.hteacher.data.pdf.PdfRendererEngine
 import com.hasan0525.hteacher.data.pdf.RenderedPdfPage
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowBack
 
 private sealed interface PdfPageState {
     data object Loading : PdfPageState
@@ -85,7 +89,7 @@ fun PdfViewerScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(androidx.compose.material.icons.Icons.Outlined.ArrowBack, contentDescription = "رجوع")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = "رجوع")
                     }
                 }
             )
@@ -136,7 +140,7 @@ fun PdfViewerScreen(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
-                            .
+                            .fillMaxWidth()
                     ) {
                         Image(
                             bitmap = page.bitmap.asImageBitmap(),
