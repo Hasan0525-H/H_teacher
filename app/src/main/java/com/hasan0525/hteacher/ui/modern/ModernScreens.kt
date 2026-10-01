@@ -3,7 +3,6 @@ package com.hasan0525.hteacher.ui.modern
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -48,7 +47,6 @@ private val CanvasBg = Color(0xFFF7F8F6)
 private val Surface = Color.White
 private val Brand = Color(0xFF176B5A)
 private val BrandSoft = Color(0xFFE4F1EC)
-private val Accent = Color(0xFFE6B65A)
 private val Line = Color(0xFFE5EAE7)
 
 enum class HIcon { HOME, BOOK, EXAM, FOLDER, PEOPLE, CHART, TOOLS, PLUS, ARROW, PDF, SETTINGS, SPARK }
