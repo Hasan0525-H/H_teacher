@@ -75,15 +75,11 @@ android {
         buildConfig = true
     }
 
-    testOptions {
-        managedDevices {
-            devices {
-                create<com.android.build.api.dsl.ManagedVirtualDevice>("pixel2Api30") {
-                    device = "Pixel 2"
-                    apiLevel = 30
-                    systemImageSource = "aosp-atd"
-                }
-            }
+    testOptions.managedDevices.devices {
+        create<com.android.build.api.dsl.ManagedVirtualDevice>("pixel2Api30") {
+            device = "Pixel 2"
+            apiLevel = 30
+            systemImageSource = "aosp-atd"
         }
     }
 
