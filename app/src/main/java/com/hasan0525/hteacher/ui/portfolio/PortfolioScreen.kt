@@ -9,10 +9,14 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Badge
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -79,136 +83,84 @@ private fun PortfolioScreen(
     var editingItem by remember { mutableStateOf<PortfolioItemUi?>(null) }
     var pendingAttachmentItemId by remember { mutableLongStateOf(0L) }
 
-    val attachmentPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null && pendingAttachmentItemId > 0L) {
-            onAddAttachment(pendingAttachmentItemId, uri)
-        }
+    val attachmentPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null && pendingAttachmentItemId > 0L) onAddAttachment(pendingAttachmentItemId, uri)
         pendingAttachmentItemId = 0L
     }
-
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/pdf")
-    ) { uri ->
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
         if (uri != null) onExport(uri)
     }
 
     LaunchedEffect(state.message) {
-        val current = state.message ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(current)
-        onMessageShown()
+        state.message?.let { snackbarHostState.showSnackbar(it); onMessageShown() }
     }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        text = "ملف الإنجاز",
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.Outlined.ArrowBack,
-                            contentDescription = "رجوع"
-                        )
-                    }
-                },
+                title = { Text("ملف الإنجاز", fontWeight = FontWeight.Bold) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, "رجوع") } },
                 actions = {
-                    TextButton(
-                        enabled = !state.isExporting,
-                        onClick = {
-                            exportLauncher.launch("ملف الإنجاز.pdf")
-                        }
-                    ) {
-                        Text("PDF")
+                    IconButton(enabled = !state.isExporting, onClick = { exportLauncher.launch("ملف الإنجاز.pdf") }) {
+                        Icon(Icons.Outlined.Description, "PDF")
                     }
                 }
             )
         }
-    ) { innerPadding ->
+    ) { padding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(18.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                ProfileCard(
-                    profile = state.profile,
-                    onEdit = { showProfileEditor = true }
-                )
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("ملف الإنجاز", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text("بياناتك وشواهدك في مكان واحد", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
+                        Icon(Icons.Outlined.Badge, null, Modifier.padding(12.dp).size(25.dp), tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
             }
-
             item {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                ProfileCard(profile = state.profile, onEdit = { showProfileEditor = true })
+            }
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     item {
-                        FilterChip(
-                            selected = state.selectedCategory == null,
-                            onClick = { onSelectCategory(null) },
-                            label = { Text("الكل") }
-                        )
+                        FilterChip(selected = state.selectedCategory == null, onClick = { onSelectCategory(null) }, label = { Text("الكل") })
                     }
-
-                    items(
-                        items = PortfolioCategory.entries.toList(),
-                        key = { it.storageKey }
-                    ) { category ->
-                        FilterChip(
-                            selected = state.selectedCategory == category,
-                            onClick = {
-                                onSelectCategory(category)
-                            },
-                            label = { Text(category.label) }
-                        )
+                    items(PortfolioCategory.entries.toList(), key = { it.storageKey }) { category ->
+                        FilterChip(selected = state.selectedCategory == category, onClick = { onSelectCategory(category) }, label = { Text(category.label) })
                     }
                 }
             }
-
             item {
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { showNewItem = true }
-                ) {
-                    Text("إضافة عنصر لملف الإنجاز")
+                Button(onClick = { showNewItem = true }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Outlined.Add, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("إضافة")
                 }
-
                 if (state.isExporting) {
                     Spacer(Modifier.height(8.dp))
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
             }
-
             if (state.items.isEmpty()) {
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(22.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        Text(
-                            text = "لا توجد عناصر",
-                            modifier = Modifier.padding(18.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
+                        Column(Modifier.fillMaxWidth().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Outlined.Description, null, Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(Modifier.height(8.dp))
+                            Text("لا توجد عناصر", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             } else {
-                items(
-                    items = state.items,
-                    key = { it.item.id }
-                ) { ui ->
+                items(state.items, key = { it.item.id }) { ui ->
                     PortfolioItemCard(
                         ui = ui,
                         onEdit = { editingItem = ui },
@@ -224,48 +176,36 @@ private fun PortfolioScreen(
         }
     }
 
-    if (showProfileEditor) {
-        ProfileEditorDialog(
-            profile = state.profile,
-            onDismiss = { showProfileEditor = false },
-            onSave = { name, school, specialization, title ->
-                onSaveProfile(name, school, specialization, title)
-                showProfileEditor = false
-            }
-        )
-    }
+    if (showProfileEditor) ProfileEditorDialog(
+        profile = state.profile,
+        onDismiss = { showProfileEditor = false },
+        onSave = { name, school, specialization, title ->
+            onSaveProfile(name, school, specialization, title)
+            showProfileEditor = false
+        }
+    )
 
-    if (showNewItem) {
-        PortfolioItemEditorDialog(
-            initialCategory = state.selectedCategory
-                ?: PortfolioCategory.PROFESSIONAL_EVIDENCE,
-            initialTitle = "",
-            initialDescription = "",
-            dialogTitle = "إضافة عنصر",
-            onDismiss = { showNewItem = false },
-            onSave = { category, title, description ->
-                onAddItem(category, title, description)
-                showNewItem = false
-            }
-        )
-    }
+    if (showNewItem) PortfolioItemEditorDialog(
+        initialCategory = state.selectedCategory ?: PortfolioCategory.PROFESSIONAL_EVIDENCE,
+        initialTitle = "",
+        initialDescription = "",
+        dialogTitle = "إضافة عنصر",
+        onDismiss = { showNewItem = false },
+        onSave = { category, title, description ->
+            onAddItem(category, title, description)
+            showNewItem = false
+        }
+    )
 
     editingItem?.let { ui ->
         PortfolioItemEditorDialog(
-            initialCategory = PortfolioCategory.fromStorage(
-                ui.item.category
-            ),
+            initialCategory = PortfolioCategory.fromStorage(ui.item.category),
             initialTitle = ui.item.title,
             initialDescription = ui.item.description,
             dialogTitle = "تعديل العنصر",
             onDismiss = { editingItem = null },
             onSave = { category, title, description ->
-                onUpdateItem(
-                    ui.item.id,
-                    category,
-                    title,
-                    description
-                )
+                onUpdateItem(ui.item.id, category, title, description)
                 editingItem = null
             }
         )
