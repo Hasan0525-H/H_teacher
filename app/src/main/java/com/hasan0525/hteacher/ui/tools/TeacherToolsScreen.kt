@@ -227,7 +227,7 @@ private fun StudentsContent(
 
         if (state.students.isEmpty()) {
             item {
-                EmptyCard("لا يوجد طلاب حتى الآن.")
+                EmptyCard("لا يوجد طلاب")
             }
         } else {
             items(
@@ -341,7 +341,7 @@ private fun AttendanceContent(
 
         if (state.students.isEmpty()) {
             item {
-                EmptyCard("أضف الطلاب أولًا.")
+                EmptyCard("أضف الطلاب")
             }
         } else {
             items(
@@ -425,7 +425,7 @@ private fun GradesContent(
     ) {
         item {
             if (state.students.isEmpty()) {
-                EmptyCard("أضف الطلاب أولًا.")
+                EmptyCard("أضف الطلاب")
             } else {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -497,7 +497,7 @@ private fun GradesContent(
 
             if (records.isEmpty()) {
                 item {
-                    EmptyCard("لا توجد درجات مسجلة لهذا الطالب.")
+                    EmptyCard("لا توجد درجات")
                 }
             } else {
                 items(
@@ -589,7 +589,7 @@ private fun ReportsContent(
                         enabled = !state.isExporting,
                         onClick = onExport
                     ) {
-                        Text("تصدير تقرير PDF")
+                        Text("تصدير PDF")
                     }
                 }
             }
