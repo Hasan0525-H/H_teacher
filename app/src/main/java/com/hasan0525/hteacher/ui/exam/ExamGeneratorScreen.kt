@@ -130,10 +130,10 @@ private fun ExamGeneratorScreen(
                         Text("المنهج", fontWeight = FontWeight.Bold)
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             item {
-                                FilterChip(state.selectedCurriculumId == null, { onSelectCurriculum(null) }, label = { Text("كل المناهج") })
+                                FilterChip(selected = state.selectedCurriculumId == null, onClick = { onSelectCurriculum(null) }, label = { Text("كل المناهج") })
                             }
                             items(state.curricula, key = { it.id }) { curriculum ->
-                                FilterChip(state.selectedCurriculumId == curriculum.id, { onSelectCurriculum(curriculum.id) }, label = { Text(curriculum.title, maxLines = 1, overflow = TextOverflow.Ellipsis) })
+                                FilterChip(selected = state.selectedCurriculumId == curriculum.id, onClick = { onSelectCurriculum(curriculum.id) }, label = { Text(curriculum.title, maxLines = 1, overflow = TextOverflow.Ellipsis) })
                             }
                         }
                     }
@@ -154,14 +154,14 @@ private fun ExamGeneratorScreen(
                         Text("نوع السؤال", fontWeight = FontWeight.Bold)
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(QuestionType.entries.toList(), key = { it.storageKey }) { type ->
-                                FilterChip(type in state.selectedTypes, { onToggleType(type) }, label = { Text(type.label) })
+                                FilterChip(selected = type in state.selectedTypes, onClick = { onToggleType(type) }, label = { Text(type.label) })
                             }
                         }
                         Text("المستوى", fontWeight = FontWeight.Bold)
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            item { FilterChip(state.selectedDifficulty == null, { onSelectDifficulty(null) }, label = { Text("متنوع") }) }
+                            item { FilterChip(selected = state.selectedDifficulty == null, onClick = { onSelectDifficulty(null) }, label = { Text("متنوع") }) }
                             items(Difficulty.entries.toList(), key = { it.storageKey }) { difficulty ->
-                                FilterChip(state.selectedDifficulty == difficulty, { onSelectDifficulty(difficulty) }, label = { Text(difficulty.label) })
+                                FilterChip(selected = state.selectedDifficulty == difficulty, onClick = { onSelectDifficulty(difficulty) }, label = { Text(difficulty.label) })
                             }
                         }
                     }
@@ -172,13 +172,13 @@ private fun ExamGeneratorScreen(
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text("إنشاء", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Button(Modifier.weight(1f), onClick = onGenerate, enabled = state.selectedSubjectId != null) { Text("إنشاء") }
-                            OutlinedButton(Modifier.weight(1f), onClick = { showQuestionBank = true }) { Text("بنك الأسئلة") }
+                            Button(onClick = onGenerate, enabled = state.selectedSubjectId != null, modifier = Modifier.weight(1f)) { Text("إنشاء") }
+                            OutlinedButton(onClick = { showQuestionBank = true }, modifier = Modifier.weight(1f)) { Text("بنك الأسئلة") }
                         }
-                        Button(Modifier.fillMaxWidth(), enabled = state.aiConfigured && state.selectedCurriculumId != null && state.indexedLessonCount > 0 && !state.isAiGenerating, onClick = onGenerateAi) {
+                        Button(modifier = Modifier.fillMaxWidth(), enabled = state.aiConfigured && state.selectedCurriculumId != null && state.indexedLessonCount > 0 && !state.isAiGenerating, onClick = onGenerateAi) {
                             Text(if (state.isAiGenerating) "جارٍ التوليد..." else "توليد بالذكاء الاصطناعي")
                         }
-                        if (state.isAiGenerating) LinearProgressIndicator(Modifier.fillMaxWidth())
+                        if (state.isAiGenerating) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                         Text(
                             when {
                                 !state.aiConfigured -> "الذكاء الاصطناعي غير مفعّل"
