@@ -75,14 +75,6 @@ android {
         buildConfig = true
     }
 
-    testOptions.managedDevices.localDevices {
-        create("pixel2Api30") {
-            device = "Pixel 2"
-            apiLevel = 30
-            systemImageSource = "aosp-atd"
-        }
-    }
-
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
