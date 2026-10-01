@@ -49,40 +49,61 @@ private fun HomeDashboard(
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
             contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             item {
-                Column {
-                    Text(
-                        "مرحباً بالمعلم 👋",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        state.greeting,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = "لوحة المعلم",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             item {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(28.dp),
+                    shape = RoundedCornerShape(24.dp),
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
-                    Column(Modifier.padding(22.dp)) {
-                        Text("لوحة المعلم", fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.height(8.dp))
-                        Text("كل أدواتك التعليمية في مكان واحد")
+                    Row(
+                        modifier = Modifier.padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surface,
+                                    CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.School,
+                                contentDescription = null
+                            )
+                        }
+
+                        Spacer(Modifier.width(14.dp))
+
+                        Text(
+                            text = state.greeting,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }
 
             item {
-                Text("الأدوات", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "الأدوات",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             items(state.tools, key = { it.id }) { tool ->
@@ -108,31 +129,42 @@ private fun TeacherToolCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(22.dp))
             .clickable { onToolClick(tool) },
-        shape = RoundedCornerShape(24.dp),
-        tonalElevation = 2.dp
+        shape = RoundedCornerShape(22.dp),
+        tonalElevation = 1.dp
     ) {
         Row(
-            modifier = Modifier.padding(18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(54.dp)
-                    .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape),
+                    .size(50.dp)
+                    .background(
+                        MaterialTheme.colorScheme.secondaryContainer,
+                        CircleShape
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, null)
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null
+                )
             }
 
-            Column(Modifier.weight(1f)) {
-                Text(tool.title, fontWeight = FontWeight.Bold)
-                Text("فتح الأداة", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            Spacer(Modifier.width(14.dp))
 
-            Text("›", style = MaterialTheme.typography.headlineMedium)
+            Text(
+                text = tool.title,
+                modifier = Modifier.weight(1f),
+                fontWeight = FontWeight.Bold
+            )
+
+            Icon(
+                imageVector = Icons.Outlined.ChevronLeft,
+                contentDescription = null
+            )
         }
     }
 }
