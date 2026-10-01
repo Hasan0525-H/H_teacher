@@ -19,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
@@ -35,8 +37,6 @@ import com.hasan0525.hteacher.ui.curriculum.CurriculumViewModel
 import com.hasan0525.hteacher.ui.curriculum.CurriculumViewModelFactory
 import com.hasan0525.hteacher.ui.exam.ExamGeneratorViewModel
 import com.hasan0525.hteacher.ui.exam.ExamGeneratorViewModelFactory
-import com.hasan0525.hteacher.ui.home.HomeTool
-import com.hasan0525.hteacher.ui.home.HomeTool
 import com.hasan0525.hteacher.ui.home.HomeViewModel
 import com.hasan0525.hteacher.ui.portfolio.PortfolioViewModel
 import com.hasan0525.hteacher.ui.portfolio.PortfolioViewModelFactory
@@ -167,7 +167,7 @@ fun ModernHome(onOpen:(String)->Unit) {
 
 @Composable
 fun ModernCurriculum(onBack:()->Unit,onOpenPdf:(String,String)->Unit) {
-    val app=LocalApplication.current
+    val app=(LocalContext.current.applicationContext as HTeacherApplication)
     val vm:CurriculumViewModel=viewModel(factory=CurriculumViewModelFactory(app))
     val state by vm.uiState.collectAsStateWithLifecycle()
     var showAddSubject by remember{mutableStateOf(false)}
@@ -210,7 +210,7 @@ fun ModernExam(onBack:()->Unit) {
     val app=LocalApplication.current
     val vm:ExamGeneratorViewModel=viewModel(factory=ExamGeneratorViewModelFactory(app))
     val state by vm.uiState.collectAsStateWithLifecycle()
-    val launcher=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")){u:Uri?->u?.let(vm::exportExam)}
+    val launcher=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")){u:Uri?->u?.let { vm.exportExam(it, false) }}
     Scaffold(containerColor=CanvasBg,bottomBar={ModernNav("exams"){if(it=="home")onBack()}}){pad->
         LazyColumn(Modifier.fillMaxSize().padding(pad),contentPadding=PaddingValues(bottom=30.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
             item{HTitle("استوديو الاختبارات","صمّم اختبارك ثم صدّره PDF",onBack)}
@@ -317,4 +317,3 @@ fun ModernTools(onBack:()->Unit) {
     AlertDialog(onDismissRequest=onDismiss,title={Text(title)},text={HField(label,value,{value=it})},confirmButton={TextButton(enabled=value.isNotBlank(),onClick={onSave(value)}){Text("حفظ")}},dismissButton={TextButton(onClick=onDismiss){Text("إلغاء")}})
 }
 
-private val LocalApplication=staticCompositionLocalOf<HTeacherApplication>{error("HTeacherApplication missing")}
