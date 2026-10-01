@@ -17,6 +17,6 @@ private val EducationColors=lightColorScheme(
     outline=Color(0xFFE1E6EF)
 )
 @Composable
-fun HTeacherTheme(darkTheme:Boolean=false,content:@Composable()->Unit){
+fun HTeacherTheme(darkTheme:Boolean=false,content: @Composable () -> Unit){
     MaterialTheme(colorScheme=EducationColors,typography=AppTypography,shapes=TeacherShapes,content=content)
 }
