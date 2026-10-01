@@ -10,6 +10,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,10 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -57,27 +55,21 @@ enum class HIcon { HOME, BOOK, EXAM, FOLDER, PEOPLE, CHART, TOOLS, PLUS, ARROW, 
 
 @Composable
 fun HIconView(icon: HIcon, modifier: Modifier = Modifier, tint: Color = Brand) {
-    Canvas(modifier.size(26.dp)) {
-        val s = size.minDimension
-        val w = s * .72f
-        val left = (s-w)/2
-        val top = (s-w)/2
-        val p = Stroke(width=s*.09f, cap=StrokeCap.Round)
-        when(icon) {
-            HIcon.HOME -> { drawLine(Offset(left,top+s*.42f),Offset(s/2,top),p); drawLine(Offset(s/2,top),Offset(left+w,top+s*.42f),p); drawRoundRect(left+s*.12f,top+s*.38f,w*.76f,w*.58f, s*.08f,s*.08f,tint,style=Stroke(width=s*.09f)); drawLine( s/2,top+s*.96f,s/2,top+s*.62f,p) }
-            HIcon.BOOK -> { drawRoundRect(left,top,w*.48f,w,s*.04f,s*.04f,tint,style=p); drawRoundRect(s/2,top,w*.48f,w,s*.04f,s*.04f,tint,style=p); drawLine(s/2,top+s*.08f,s/2,top+s*.92f,p) }
-            HIcon.EXAM -> { drawRoundRect(left+s*.12f,top+s*.08f,w*.76f,w*.9f,s*.08f,s*.08f,tint,style=p); drawLine(left+s*.3f,top+s*.32f,left+s*.72f,top+s*.32f,p); drawLine(left+s*.3f,top+s*.52f,left+s*.72f,top+s*.52f,p); drawLine(left+s*.3f,top+s*.72f,left+s*.58f,top+s*.72f,p) }
-            HIcon.FOLDER -> { drawRoundRect(left,top+s*.2f,w,w*.72f,s*.08f,s*.08f,tint,style=p); drawLine(left+s*.08f,top+s*.2f,left+s*.3f,top+s*.08f,p); drawLine(left+s*.3f,top+s*.08f,left+s*.52f,top+s*.2f,p) }
-            HIcon.PEOPLE -> { drawCircle(s*.38f,s*.34f,s*.13f,tint,style=p); drawCircle(s*.7f,s*.4f,s*.1f,tint,style=p); drawRoundRect(s*.16f,s*.54f,s*.46f,s*.35f,s*.12f,s*.12f,tint,style=p); drawArc(s*.57f,s*.52f,s*.86f,s*.86f,190f,160f,false,p) }
-            HIcon.CHART -> { drawLine(left,top+w,left,top,p); drawLine(left,top+w,s*.9f,top+w,p); drawLine(left+s*.1f,top+w*.75f,left+s*.32f,top+w*.55f,p); drawLine(left+s*.32f,top+w*.55f,left+s*.5f,top+w*.66f,p); drawLine(left+s*.5f,top+w*.66f,left+s*.78f,top+w*.25f,p) }
-            HIcon.TOOLS -> { drawCircle(s*.34f,s*.36f,s*.18f,tint,style=p); drawLine(s*.47f,s*.49f,s*.84f,s*.86f,p); drawCircle(s*.72f,s*.72f,s*.15f,tint,style=p) }
-            HIcon.PLUS -> { drawLine(s*.2f,s/2,s*.8f,s/2,p); drawLine(s/2,s*.2f,s/2,s*.8f,p) }
-            HIcon.ARROW -> { drawLine(s*.2f,s/2,s*.8f,s/2,p); drawLine(s*.55f,s*.25f,s*.8f,s/2,p); drawLine(s*.55f,s*.75f,s*.8f,s/2,p) }
-            HIcon.PDF -> { drawRoundRect(left+s*.12f,top,w*.72f,w,s*.06f,s*.06f,tint,style=p); drawLine(left+s*.27f,top+s*.38f,left+s*.68f,top+s*.38f,p); drawLine(left+s*.27f,top+s*.58f,left+s*.68f,top+s*.58f,p) }
-            HIcon.SETTINGS -> { drawCircle(s/2,s/2,s*.24f,tint,style=p); for(i in 0 until 8){ val a=i*45f; val rad=Math.toRadians(a.toDouble()); val x1=s/2+ s*.32f*kotlin.math.cos(rad).toFloat(); val y1=s/2+s*.32f*kotlin.math.sin(rad).toFloat(); val x2=s/2+s*.43f*kotlin.math.cos(rad).toFloat(); val y2=s/2+s*.43f*kotlin.math.sin(rad).toFloat(); drawLine(x1,y1,x2,y2,p) } }
-            HIcon.SPARK -> { drawLine(s*.5f,s*.08f,s*.5f,s*.92f,p); drawLine(s*.08f,s*.5f,s*.92f,s*.5f,p); drawLine(s*.22f,s*.22f,s*.78f,s*.78f,p); drawLine(s*.78f,s*.22f,s*.22f,s*.78f,p) }
-        }
+    val glyph = when(icon) {
+        HIcon.HOME -> "⌂"
+        HIcon.BOOK -> "▤"
+        HIcon.EXAM -> "▣"
+        HIcon.FOLDER -> "□"
+        HIcon.PEOPLE -> "♙"
+        HIcon.CHART -> "⌁"
+        HIcon.TOOLS -> "⚙"
+        HIcon.PLUS -> "+"
+        HIcon.ARROW -> "›"
+        HIcon.PDF -> "▥"
+        HIcon.SETTINGS -> "⊙"
+        HIcon.SPARK -> "✦"
     }
+    Text(glyph, color=tint, fontWeight=FontWeight.Bold, style=MaterialTheme.typography.titleLarge, modifier=modifier.size(26.dp), textAlign=androidx.compose.ui.text.style.TextAlign.Center)
 }
 
 @Composable
@@ -149,7 +141,7 @@ fun ModernHome(onOpen:(String)->Unit) {
     }
 }
 
-@Composable private fun HStat(label:String,value:Int,icon:String) {
+@Composable private fun RowScope.HStat(label:String,value:Int,icon:String) {
     Column(Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(CanvasBg).padding(14.dp)) {
         Text(value.toString(),style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold,color=Brand)
         Text(label,color=Muted,style=MaterialTheme.typography.bodySmall)
@@ -195,19 +187,19 @@ fun ModernCurriculum(onBack:()->Unit,onOpenPdf:(String,String)->Unit,onNavigate:
             item{Text("مكتبتك",fontWeight=FontWeight.Bold,color=Ink,modifier=Modifier.padding(horizontal=20.dp))}
             if(state.curricula.isEmpty()) item{HSurface(Modifier.padding(horizontal=18.dp).fillMaxWidth()){Text("المكتبة فارغة",fontWeight=FontWeight.Bold,color=Ink);Text("أضف أول ملف PDF للبدء",color=Muted,modifier=Modifier.padding(top=6.dp))}}
             items(state.curricula,key={it.id}){c->
-                HSurface(Modifier.padding(horizontal=18.dp).fillMaxWidth(),onClick={onOpenPdf(c.localFileUri,c.title)}){
+                HSurface(Modifier.padding(horizontal=18.dp).fillMaxWidth(),onClick={onOpenPdf(c.localFileUri.orEmpty(),c.title)}){
                     Row(verticalAlignment=Alignment.CenterVertically){Surface(shape=RoundedCornerShape(16.dp),color=BrandSoft){HIconView(HIcon.BOOK,Modifier.padding(12.dp))};Spacer(Modifier.width(14.dp));Column(Modifier.weight(1f)){Text(c.title,fontWeight=FontWeight.Bold,color=Ink,maxLines=1,overflow=TextOverflow.Ellipsis);Text("مادة ومرحلة محفوظة أوفلاين",color=Muted,style=MaterialTheme.typography.bodySmall)};HIconView(HIcon.ARROW,tint=Muted)}
                 }
             }
         }
     }
-    if(showAddSubject) HTextDialog("مادة جديدة","اسم المادة"){showAddSubject=false}{vm.addSubject(it)}
-    if(showAddGrade) HTextDialog("صف جديد","اسم الصف"){showAddGrade=false}{vm.addGrade(it)}
+    if(showAddSubject) HTextDialog("مادة جديدة","اسم المادة",onDismiss={showAddSubject=false},onSave={vm.addSubject(it);showAddSubject=false})
+    if(showAddGrade) HTextDialog("صف جديد","اسم الصف",onDismiss={showAddGrade=false},onSave={vm.addGrade(it);showAddGrade=false})
 }
 
 @Composable
 fun ModernExam(onBack:()->Unit,onNavigate:(String)->Unit={}) {
-    val app=LocalApplication.current
+    val app=(LocalContext.current.applicationContext as HTeacherApplication)
     val vm:ExamGeneratorViewModel=viewModel(factory=ExamGeneratorViewModelFactory(app))
     val state by vm.uiState.collectAsStateWithLifecycle()
     val launcher=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")){u:Uri?->u?.let { vm.exportExam(it, false) }}
