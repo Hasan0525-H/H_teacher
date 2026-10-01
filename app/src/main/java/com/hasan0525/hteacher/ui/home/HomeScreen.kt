@@ -3,8 +3,9 @@ package com.hasan0525.hteacher.ui.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -23,7 +24,7 @@ fun HomeRoute(
     onOpenExams: () -> Unit,
     onOpenPortfolio: () -> Unit,
     onOpenTools: () -> Unit,
-    viewModel: HomeViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    viewModel: androidx.lifecycle.viewmodel.compose.viewModel<HomeViewModel>() = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     HomeDashboard(
         state = viewModel.uiState,
@@ -34,7 +35,6 @@ fun HomeRoute(
                 ToolId.EXAMS -> onOpenExams()
                 ToolId.PORTFOLIO -> onOpenPortfolio()
                 ToolId.MORE -> onOpenTools()
-                else -> Unit
             }
         }
     )
@@ -45,69 +45,82 @@ private fun HomeDashboard(
     state: HomeUiState,
     onToolClick: (TeacherTool) -> Unit
 ) {
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
+        Column(
+            Modifier.fillMaxSize().padding(padding).padding(horizontal = 18.dp)
         ) {
-            item {
-                Text(
-                    text = "لوحة المعلم",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            Spacer(Modifier.height(18.dp))
 
-            item {
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = CircleShape,
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
-                    Row(
-                        modifier = Modifier.padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(52.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.surface,
-                                    CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.School,
-                                contentDescription = null
-                            )
-                        }
+                    Icon(
+                        Icons.Outlined.School,
+                        null,
+                        Modifier.padding(12.dp).size(26.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("المعلم H", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text("لوحتك", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                IconButton(onClick = { }) {
+                    Icon(Icons.Outlined.MoreVert, "المزيد")
+                }
+            }
 
-                        Spacer(Modifier.width(14.dp))
+            Spacer(Modifier.height(22.dp))
 
+            Surface(
+                Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(30.dp),
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Row(
+                    Modifier.padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("مرحبًا", style = MaterialTheme.typography.labelLarge)
+                        Spacer(Modifier.height(4.dp))
                         Text(
-                            text = state.greeting,
-                            fontWeight = FontWeight.Medium
+                            state.greeting.removePrefix("مرحبًا بك في المعلم H").ifBlank { "ابدأ من هنا" },
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface) {
+                        Icon(
+                            Icons.Outlined.AutoAwesome,
+                            null,
+                            Modifier.padding(14.dp).size(30.dp),
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
             }
 
-            item {
-                Text(
-                    text = "الأدوات",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            Spacer(Modifier.height(22.dp))
+            Text("الأدوات", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(12.dp))
 
-            items(state.tools, key = { it.id }) { tool ->
-                TeacherToolCard(tool, onToolClick)
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(state.tools, key = { it.id }) { tool ->
+                    TeacherToolCard(tool, onToolClick)
+                }
             }
         }
     }
@@ -118,53 +131,35 @@ private fun TeacherToolCard(
     tool: TeacherTool,
     onToolClick: (TeacherTool) -> Unit
 ) {
-    val icon = when (tool.id) {
-        ToolId.CURRICULA -> Icons.Outlined.MenuBook
-        ToolId.EXAMS -> Icons.Outlined.Assignment
-        ToolId.PORTFOLIO -> Icons.Outlined.Folder
-        ToolId.MORE -> Icons.Outlined.GridView
-        else -> Icons.Outlined.School
+    val (icon, accent) = when (tool.id) {
+        ToolId.CURRICULA -> Icons.Outlined.MenuBook to MaterialTheme.colorScheme.primaryContainer
+        ToolId.EXAMS -> Icons.Outlined.Assignment to MaterialTheme.colorScheme.secondaryContainer
+        ToolId.PORTFOLIO -> Icons.Outlined.Folder to MaterialTheme.colorScheme.tertiaryContainer
+        ToolId.MORE -> Icons.Outlined.GridView to MaterialTheme.colorScheme.surfaceVariant
     }
 
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .clickable { onToolClick(tool) },
-        shape = RoundedCornerShape(22.dp),
+        Modifier.fillMaxWidth().height(158.dp).clip(RoundedCornerShape(26.dp)).clickable { onToolClick(tool) },
+        shape = RoundedCornerShape(26.dp),
         tonalElevation = 1.dp
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Box(
-                modifier = Modifier
-                    .size(50.dp)
-                    .background(
-                        MaterialTheme.colorScheme.secondaryContainer,
-                        CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null
+            Surface(shape = CircleShape, color = accent) {
+                Icon(icon, null, Modifier.padding(11.dp).size(25.dp))
+            }
+            Column {
+                Text(tool.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    if (tool.status == ToolStatus.READY) tool.description else "قريبًا",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
                 )
             }
-
-            Spacer(Modifier.width(14.dp))
-
-            Text(
-                text = tool.title,
-                modifier = Modifier.weight(1f),
-                fontWeight = FontWeight.Bold
-            )
-
-            Icon(
-                imageVector = Icons.Outlined.ChevronLeft,
-                contentDescription = null
-            )
         }
     }
 }
