@@ -227,12 +227,12 @@ fun ModernExam(onBack:()->Unit,onNavigate:(String)->Unit={}) {
             }
             item{
                 Row(Modifier.padding(horizontal=18.dp),horizontalArrangement=Arrangement.spacedBy(10.dp)){
-                    Button(Modifier.weight(1f),onClick=vm::generateExam,shape=RoundedCornerShape(18.dp)){Text("إنشاء الاختبار")}
-                    OutlinedButton(Modifier.weight(1f),onClick=vm::generateAiQuestions,shape=RoundedCornerShape(18.dp),enabled=!state.isAiGenerating){Text(if(state.isAiGenerating)"جارٍ..." else "توليد ذكي")}
+                    Button(modifier=Modifier.weight(1f),onClick=vm::generateExam,shape=RoundedCornerShape(18.dp)){Text("إنشاء الاختبار")}
+                    OutlinedButton(modifier=Modifier.weight(1f),onClick=vm::generateAiQuestions,shape=RoundedCornerShape(18.dp),enabled=!state.isAiGenerating){Text(if(state.isAiGenerating)"جارٍ..." else "توليد ذكي")}
                 }
             }
             state.generatedExam?.let{exam->
-                item{HSurface(Modifier.padding(horizontal=18.dp).fillMaxWidth()){Text(exam.title,fontWeight=FontWeight.Bold,color=Ink,style=MaterialTheme.typography.titleLarge);Text("عدد الأسئلة: "+exam.questions.size,color=Muted);Text("المجموع: "+exam.totalMarks,color=Muted);Spacer(Modifier.height(12.dp));Button(Modifier.fillMaxWidth(),onClick={launcher.launch(exam.title+".pdf")},shape=RoundedCornerShape(18.dp)){Text("تصدير PDF")}}}
+                item{HSurface(Modifier.padding(horizontal=18.dp).fillMaxWidth()){Text(exam.title,fontWeight=FontWeight.Bold,color=Ink,style=MaterialTheme.typography.titleLarge);Text("عدد الأسئلة: "+exam.questions.size,color=Muted);Text("المجموع: "+exam.totalMarks,color=Muted);Spacer(Modifier.height(12.dp));Button(modifier=Modifier.fillMaxWidth(),onClick={launcher.launch(exam.title+".pdf")},shape=RoundedCornerShape(18.dp)){Text("تصدير PDF")}}}
             }
         }
     }
@@ -260,9 +260,9 @@ fun ModernPortfolio(onBack:()->Unit,onNavigate:(String)->Unit={}) {
                 }
             }
             item{LazyRow(Modifier.padding(horizontal=18.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){item{HChip("الكل",state.selectedCategory==null){vm.selectCategory(null)}};items(PortfolioCategory.entries){c->HChip(c.label,state.selectedCategory==c){vm.selectCategory(c)}}}}
-            item{Button(Modifier.padding(horizontal=18.dp).fillMaxWidth(),onClick={add=true},shape=RoundedCornerShape(18.dp)){Text("إضافة إنجاز")}}
+            item{Button(modifier=Modifier.padding(horizontal=18.dp).fillMaxWidth(),onClick={add=true},shape=RoundedCornerShape(18.dp)){Text("إضافة إنجاز")}}
             items(state.items,key={it.item.id}){ui->HSurface(Modifier.padding(horizontal=18.dp).fillMaxWidth()){Text(ui.item.title,fontWeight=FontWeight.Bold,color=Ink);Text(PortfolioCategory.fromStorage(ui.item.category).label,color=Brand,style=MaterialTheme.typography.bodySmall);if(ui.item.description.isNotBlank())Text(ui.item.description,color=Muted,modifier=Modifier.padding(top=5.dp));if(ui.attachments.isNotEmpty())Text(ui.attachments.size.toString()+" مرفق",color=Muted,modifier=Modifier.padding(top=8.dp));TextButton(onClick={vm.deleteItem(ui.item.id)}){Text("حذف")}}}
-            item{OutlinedButton(Modifier.padding(horizontal=18.dp).fillMaxWidth(),onClick={launcher.launch("teacher-portfolio.pdf")},enabled=!state.isExporting,shape=RoundedCornerShape(18.dp)){Text(if(state.isExporting)"جارٍ التصدير..." else "تصدير ملف الإنجاز PDF")}}
+            item{OutlinedButton(modifier=Modifier.padding(horizontal=18.dp).fillMaxWidth(),onClick={launcher.launch("teacher-portfolio.pdf")},enabled=!state.isExporting,shape=RoundedCornerShape(18.dp)){Text(if(state.isExporting)"جارٍ التصدير..." else "تصدير ملف الإنجاز PDF")}}
         }
     }
     if(add) HPortfolioDialog(onDismiss={add=false}){c,t,d->add=false;vm.addItem(c,t,d)}
@@ -287,7 +287,7 @@ fun ModernTools(onBack:()->Unit,onNavigate:(String)->Unit={}) {
             item{LazyRow(Modifier.padding(horizontal=18.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){items(TeacherToolsSection.entries){s->HChip(s.label,state.section==s){vm.selectSection(s)}}}}
             when(state.section){
                 TeacherToolsSection.STUDENTS->{
-                    item{Button(Modifier.padding(horizontal=18.dp).fillMaxWidth(),onClick={addStudent=true},shape=RoundedCornerShape(18.dp)){Text("إضافة طالب")}}
+                    item{Button(modifier=Modifier.padding(horizontal=18.dp).fillMaxWidth(),onClick={addStudent=true},shape=RoundedCornerShape(18.dp)){Text("إضافة طالب")}}
                     items(state.students,key={it.id}){student->HSurface(Modifier.padding(horizontal=18.dp).fillMaxWidth()){Row(verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(student.name,fontWeight=FontWeight.Bold,color=Ink);Text(student.studentNumber,color=Muted)};TextButton(onClick={vm.deleteStudent(student.id)}){Text("حذف")}}}}
                 }
                 TeacherToolsSection.ATTENDANCE->{items(state.students,key={it.id}){s->HSurface(Modifier.padding(horizontal=18.dp).fillMaxWidth()){Text(s.name,fontWeight=FontWeight.Bold,color=Ink);Text("سجل حضور اليوم",color=Muted);}}}
