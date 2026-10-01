@@ -3,8 +3,6 @@ package com.hasan0525.hteacher.ui.pdf
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -86,8 +84,8 @@ fun PdfViewerScreen(
                     )
                 },
                 navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("رجوع")
+                    IconButton(onClick = onBack) {
+                        Icon(androidx.compose.material.icons.Icons.Outlined.ArrowBack, contentDescription = "رجوع")
                     }
                 }
             )
@@ -138,7 +136,7 @@ fun PdfViewerScreen(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
+                            .
                     ) {
                         Image(
                             bitmap = page.bitmap.asImageBitmap(),

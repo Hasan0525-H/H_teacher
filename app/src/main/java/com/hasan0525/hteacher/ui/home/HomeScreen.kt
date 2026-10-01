@@ -61,7 +61,7 @@ private fun HomeDashboard(
                 }
             }
             item {
-                Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surface, tonalElevation = 1.dp) {
+                Surface(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface, tonalElevation = 1.dp) {
                     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text("ابدأ من هنا", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         Text("اختر الأداة التي تحتاجها الآن", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -93,7 +93,7 @@ private fun QuickAction(
 ) {
     Surface(
         modifier = modifier.height(92.dp).clickable(enabled = tool != null) { tool?.let(onToolClick) },
-        shape = RoundedCornerShape(22.dp),
+        shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp
     ) {
@@ -120,7 +120,7 @@ private fun ToolListRow(tool: TeacherTool, onToolClick: (TeacherTool) -> Unit) {
         tonalElevation = 1.dp
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
+            Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surfaceVariant) {
                 Icon(icon, null, Modifier.padding(12.dp).size(24.dp), tint = MaterialTheme.colorScheme.primary)
             }
             Spacer(Modifier.width(14.dp))
