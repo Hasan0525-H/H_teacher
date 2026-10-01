@@ -146,10 +146,10 @@ private fun ExamGeneratorScreen(
                             Text("مواصفات الاختبار", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                             Icon(Icons.Outlined.Tune, null, tint = MaterialTheme.colorScheme.primary)
                         }
-                        OutlinedTextField(Modifier.fillMaxWidth(), state.title, onTitleChange, singleLine = true, label = { Text("عنوان الاختبار") })
+                        OutlinedTextField(value = state.title, onValueChange = onTitleChange, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text("عنوان الاختبار") })
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            OutlinedTextField(Modifier.weight(1f), state.questionCount, onQuestionCountChange, singleLine = true, label = { Text("الأسئلة") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                            OutlinedTextField(Modifier.weight(1f), state.totalMarks, onTotalMarksChange, singleLine = true, label = { Text("الدرجات") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                            OutlinedTextField(value = state.questionCount, onValueChange = onQuestionCountChange, modifier = Modifier.weight(1f), singleLine = true, label = { Text("الأسئلة") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                            OutlinedTextField(value = state.totalMarks, onValueChange = onTotalMarksChange, modifier = Modifier.weight(1f), singleLine = true, label = { Text("الدرجات") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                         }
                         Text("نوع السؤال", fontWeight = FontWeight.Bold)
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
