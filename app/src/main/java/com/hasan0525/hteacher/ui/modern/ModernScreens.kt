@@ -166,14 +166,14 @@ fun ModernHome(onOpen:(String)->Unit) {
 }
 
 @Composable
-fun ModernCurriculum(onBack:()->Unit,onOpenPdf:(String,String)->Unit) {
+fun ModernCurriculum(onBack:()->Unit,onOpenPdf:(String,String)->Unit,onNavigate:(String)->Unit={}) {
     val app=(LocalContext.current.applicationContext as HTeacherApplication)
     val vm:CurriculumViewModel=viewModel(factory=CurriculumViewModelFactory(app))
     val state by vm.uiState.collectAsStateWithLifecycle()
     var showAddSubject by remember{mutableStateOf(false)}
     var showAddGrade by remember{mutableStateOf(false)}
     val picker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){u:Uri?->u?.let(vm::importPdf)}
-    Scaffold(containerColor=CanvasBg,bottomBar={ModernNav("curricula"){if(it=="home")onBack()} }) {pad->
+    Scaffold(containerColor=CanvasBg,bottomBar={ModernNav("curricula",onNavigate) }) {pad->
         LazyColumn(Modifier.fillMaxSize().padding(pad),contentPadding=PaddingValues(bottom=30.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
             item{HTitle("مكتبة المناهج","موادك وملفاتك في مساحة واحدة",onBack)}
             item{
@@ -206,12 +206,12 @@ fun ModernCurriculum(onBack:()->Unit,onOpenPdf:(String,String)->Unit) {
 }
 
 @Composable
-fun ModernExam(onBack:()->Unit) {
+fun ModernExam(onBack:()->Unit,onNavigate:(String)->Unit={}) {
     val app=LocalApplication.current
     val vm:ExamGeneratorViewModel=viewModel(factory=ExamGeneratorViewModelFactory(app))
     val state by vm.uiState.collectAsStateWithLifecycle()
     val launcher=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")){u:Uri?->u?.let { vm.exportExam(it, false) }}
-    Scaffold(containerColor=CanvasBg,bottomBar={ModernNav("exams"){if(it=="home")onBack()}}){pad->
+    Scaffold(containerColor=CanvasBg,bottomBar={ModernNav("exams",onNavigate)}){pad->
         LazyColumn(Modifier.fillMaxSize().padding(pad),contentPadding=PaddingValues(bottom=30.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
             item{HTitle("استوديو الاختبارات","صمّم اختبارك ثم صدّره PDF",onBack)}
             item{
@@ -250,13 +250,13 @@ fun ModernExam(onBack:()->Unit) {
 private fun HField(label:String,value:String,onChange:(String)->Unit,modifier:Modifier=Modifier){OutlinedTextField(value=value,onValueChange=onChange,label={Text(label)},modifier=modifier,shape=RoundedCornerShape(16.dp),singleLine=true)}
 
 @Composable
-fun ModernPortfolio(onBack:()->Unit) {
+fun ModernPortfolio(onBack:()->Unit,onNavigate:(String)->Unit={}) {
     val app=LocalApplication.current
     val vm:PortfolioViewModel=viewModel(factory=PortfolioViewModelFactory(app))
     val state by vm.uiState.collectAsStateWithLifecycle()
     var add by remember{mutableStateOf(false)}
     val launcher=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")){u:Uri?->u?.let(vm::exportPortfolio)}
-    Scaffold(containerColor=CanvasBg,bottomBar={ModernNav("portfolio"){if(it=="home")onBack()}}){pad->
+    Scaffold(containerColor=CanvasBg,bottomBar={ModernNav("portfolio",onNavigate)}){pad->
         LazyColumn(Modifier.fillMaxSize().padding(pad),contentPadding=PaddingValues(bottom=30.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
             item{HTitle("ملف الإنجاز","حوّل أعمالك إلى سجل مهني مرتب",onBack)}
             item{
@@ -283,12 +283,12 @@ private fun HPortfolioDialog(onDismiss:()->Unit,onSave:(PortfolioCategory,String
 }
 
 @Composable
-fun ModernTools(onBack:()->Unit) {
+fun ModernTools(onBack:()->Unit,onNavigate:(String)->Unit={}) {
     val app=LocalApplication.current
     val vm:TeacherToolsViewModel=viewModel(factory=TeacherToolsViewModelFactory(app))
     val state by vm.uiState.collectAsStateWithLifecycle()
     var addStudent by remember{mutableStateOf(false)}
-    Scaffold(containerColor=CanvasBg,bottomBar={ModernNav("tools"){if(it=="home")onBack()}}){pad->
+    Scaffold(containerColor=CanvasBg,bottomBar={ModernNav("tools",onNavigate)}){pad->
         LazyColumn(Modifier.fillMaxSize().padding(pad),contentPadding=PaddingValues(bottom=30.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){
             item{HTitle("أدوات المعلم","إدارة الطلاب والحضور والدرجات والتقارير",onBack)}
             item{HSurface(Modifier.padding(horizontal=18.dp).fillMaxWidth()){Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){HStat("الطلاب",state.students.size,"PEOPLE");HStat("الحضور",state.attendance.size,"CHART");HStat("الدرجات",state.gradeRecords.size,"EXAM")}}}
