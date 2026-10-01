@@ -243,7 +243,7 @@ private fun HField(label:String,value:String,onChange:(String)->Unit,modifier:Mo
 
 @Composable
 fun ModernPortfolio(onBack:()->Unit,onNavigate:(String)->Unit={}) {
-    val app=LocalApplication.current
+    val app=(LocalContext.current.applicationContext as HTeacherApplication)
     val vm:PortfolioViewModel=viewModel(factory=PortfolioViewModelFactory(app))
     val state by vm.uiState.collectAsStateWithLifecycle()
     var add by remember{mutableStateOf(false)}
@@ -276,7 +276,7 @@ private fun HPortfolioDialog(onDismiss:()->Unit,onSave:(PortfolioCategory,String
 
 @Composable
 fun ModernTools(onBack:()->Unit,onNavigate:(String)->Unit={}) {
-    val app=LocalApplication.current
+    val app=(LocalContext.current.applicationContext as HTeacherApplication)
     val vm:TeacherToolsViewModel=viewModel(factory=TeacherToolsViewModelFactory(app))
     val state by vm.uiState.collectAsStateWithLifecycle()
     var addStudent by remember{mutableStateOf(false)}
