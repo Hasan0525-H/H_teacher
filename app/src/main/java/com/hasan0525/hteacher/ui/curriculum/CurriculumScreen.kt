@@ -125,7 +125,7 @@ private fun CurriculumScreen(
     var indexingCurriculum by remember { mutableStateOf<CurriculumEntity?>(null) }
 
     val pdfPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
+        contract = ActivityResultContracts.GetContent()
     ) { uri -> uri?.let(onImportPdf) }
 
     LaunchedEffect(state.message) {
@@ -225,7 +225,7 @@ private fun CurriculumScreen(
                             enabled = state.selectedSubjectId != null &&
                                 state.selectedGradeId != null &&
                                 !state.isImporting
-                        ) { pdfPicker.launch(arrayOf("application/pdf")) },
+                        ) { pdfPicker.launch("application/pdf") },
                     shape = RoundedCornerShape(26.dp),
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
