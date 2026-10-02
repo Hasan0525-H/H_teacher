@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,6 +27,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 /** A new RTL-first dashboard. All counts and file titles originate from live repositories. */
 private object HomeStyle {
@@ -47,13 +49,18 @@ fun HomeDashboard(onNavigate: (String) -> Unit) {
     val settings by app.container.settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
     val date = remember { LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale("ar"))) }
     val greeting = remember { if (LocalTime.now().hour < 12) "صباح الخير 👋" else "مساء الخير 👋" }
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
 
     Scaffold(
         containerColor = HomeStyle.Background,
-        bottomBar = { EducationBottomNav("home", onNavigate) }
+        bottomBar = { EducationBottomNav("home", onNavigate) },
+        snackbarHost = { SnackbarHost(snackbar) }
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),
+            state = listState,
             contentPadding = PaddingValues(start = 18.dp, end = 18.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(25.dp)
         ) {
@@ -62,11 +69,11 @@ fun HomeDashboard(onNavigate: (String) -> Unit) {
                     greeting = greeting,
                     name = settings.teacherName.ifBlank { "المعلم" },
                     onSearch = { onNavigate("curricula") },
-                    onNotifications = { onNavigate("tools") }
+                    onNotifications = { scope.launch { snackbar.showSnackbar("الإشعارات غير مفعلة حالياً") } }
                 )
             }
             item {
-                HomeHero(date = date) { onNavigate("tools") }
+                HomeHero(date = date) { scope.launch { listState.animateScrollToItem(3) } }
             }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -168,7 +175,7 @@ private fun HomeGreeting(greeting: String, name: String, onSearch: () -> Unit, o
                 style = MaterialTheme.typography.labelSmall, maxLines = 1)
         }
         HomeCircleAction(EduGlyph.SEARCH, onSearch)
-        HomeCircleAction(EduGlyph.MORE, onNotifications)
+        HomeCircleAction(EduGlyph.BELL, onNotifications)
     }
 }
 
