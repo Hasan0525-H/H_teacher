@@ -52,33 +52,51 @@ fun ClassroomHub(onBack:()->Unit,onNavigate:(String)->Unit){
             contentPadding=PaddingValues(horizontal=19.dp,vertical=18.dp),
             verticalArrangement=Arrangement.spacedBy(15.dp)) {
             item {
-                Column(Modifier.fillMaxWidth().background(Edu.Navy,RoundedCornerShape(24.dp)).padding(20.dp),
-                    verticalArrangement=Arrangement.spacedBy(13.dp)) {
-                    Text("نظرة على الفصل",color=Edu.Paper,style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
-                    Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                        StatCard("الطلاب",state.students.size.toString(),EduGlyph.GROUP,Modifier.weight(1f))
-                        StatCard("حضور اليوم",present.toString(),EduGlyph.DATE,Modifier.weight(1f),Edu.Teal)
-                        StatCard("التقييمات",state.gradeRecords.size.toString(),EduGlyph.CHART,Modifier.weight(1f))
+                WorkspaceMasthead(
+                    kicker="CLASSROOM / مركز الفصل",
+                    title="إدارة الفصل",
+                    caption="بيانات الطلاب، سجل الحضور، والتقييم",
+                    icon=EduGlyph.GROUP
+                )
+            }
+            item {
+                Column(
+                    Modifier.fillMaxWidth().background(Edu.Paper,RoundedCornerShape(22.dp))
+                        .padding(18.dp),
+                    verticalArrangement=Arrangement.spacedBy(13.dp)
+                ) {
+                    Row(verticalAlignment=Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("حضور اليوم",color=Edu.Muted,
+                                style=MaterialTheme.typography.labelLarge)
+                            Text("$present / ${state.students.size}",color=Edu.Navy,
+                                style=MaterialTheme.typography.headlineLarge,
+                                fontWeight=FontWeight.Black)
+                        }
+                        Column(horizontalAlignment=Alignment.End) {
+                            Text("${state.gradeRecords.size}",color=Edu.Teal,
+                                style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
+                            Text("تقييم محفوظ",color=Edu.Muted,
+                                style=MaterialTheme.typography.labelMedium)
+                        }
                     }
+                    LinearProgressIndicator(
+                        progress={if(state.students.isEmpty())0f else
+                            present.toFloat()/state.students.size.toFloat()},
+                        modifier=Modifier.fillMaxWidth().height(7.dp),
+                        color=Edu.Teal,
+                        trackColor=Edu.Line
+                    )
+                    Text("إجمالي الطلاب: ${state.students.size}",color=Edu.Muted,
+                        style=MaterialTheme.typography.bodySmall)
                 }
             }
             item {
-                Row(horizontalArrangement=Arrangement.spacedBy(9.dp)) {
-                    ToolModule(EduGlyph.GROUP,"الطلاب",TeacherToolsSection.STUDENTS==state.section,Modifier.weight(1f)){
-                        vm.selectSection(TeacherToolsSection.STUDENTS)
-                    }
-                    ToolModule(EduGlyph.DATE,"الحضور",TeacherToolsSection.ATTENDANCE==state.section,Modifier.weight(1f)){
-                        vm.selectSection(TeacherToolsSection.ATTENDANCE)
-                    }
-                }
-            }
-            item {
-                Row(horizontalArrangement=Arrangement.spacedBy(9.dp)){
-                    ToolModule(EduGlyph.CHART,"الدرجات",TeacherToolsSection.GRADES==state.section,Modifier.weight(1f)){
-                        vm.selectSection(TeacherToolsSection.GRADES)
-                    }
-                    ToolModule(EduGlyph.DOC,"التقارير",TeacherToolsSection.REPORTS==state.section,Modifier.weight(1f)){
-                        vm.selectSection(TeacherToolsSection.REPORTS)
+                LazyRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                    items(TeacherToolsSection.entries){section->
+                        FilterChipPill(section.label,section==state.section){
+                            vm.selectSection(section)
+                        }
                     }
                 }
             }
@@ -91,17 +109,21 @@ fun ClassroomHub(onBack:()->Unit,onNavigate:(String)->Unit){
                         EmptyState("لا يوجد طلاب","أضف الطلاب لتسجيل الحضور والدرجات",
                             EduGlyph.GROUP,"إضافة طالب"){addStudent=true}
                     }else items(filtered,key={it.id}){student->
-                        Row(Modifier.fillMaxWidth().background(Edu.Paper,RoundedCornerShape(17.dp)).padding(12.dp),
+                        // Compact roster rows replace the old card grid.
+                        Row(Modifier.fillMaxWidth().background(Edu.Paper,RoundedCornerShape(11.dp))
+                            .padding(horizontal=14.dp,vertical=7.dp),
                             verticalAlignment=Alignment.CenterVertically) {
-                            Box(Modifier.size(43.dp).background(Edu.BlueSoft,RoundedCornerShape(13.dp)),
-                                contentAlignment=Alignment.Center){Glyph(EduGlyph.GROUP)}
+                            Box(Modifier.size(38.dp).background(Edu.Mint,RoundedCornerShape(10.dp)),
+                                contentAlignment=Alignment.Center){
+                                Text(student.name.take(1),color=Edu.Teal,fontWeight=FontWeight.Bold)
+                            }
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(student.name,color=Edu.Navy,fontWeight=FontWeight.Bold)
                                 Text(student.studentNumber.ifBlank{"بدون رقم"},color=Edu.Muted,
-                                    style=MaterialTheme.typography.bodySmall)
+                                    style=MaterialTheme.typography.labelSmall)
                             }
-                            TextButton(onClick={deleteStudent=student.id}){Text("حذف",color=Edu.Error)}
+                            TextButton(onClick={deleteStudent=student.id}){Text("إزالة",color=Edu.Error)}
                         }
                     }
                 }
