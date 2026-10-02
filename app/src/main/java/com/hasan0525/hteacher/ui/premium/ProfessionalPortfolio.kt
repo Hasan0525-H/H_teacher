@@ -35,6 +35,7 @@ fun ProfessionalPortfolio(onBack:()->Unit,onNavigate:(String)->Unit) {
     val vm:PortfolioViewModel=viewModel(factory=PortfolioViewModelFactory(app))
     val state by vm.uiState.collectAsStateWithLifecycle()
     val snackbar=remember{SnackbarHostState()}
+    var showCategories by remember { mutableStateOf(false) }
     var profileEditor by remember{mutableStateOf(false)}
     var add by remember{mutableStateOf(false)}
     var editing by remember{mutableStateOf<PortfolioItemUi?>(null)}
@@ -50,48 +51,13 @@ fun ProfessionalPortfolio(onBack:()->Unit,onNavigate:(String)->Unit) {
     }
     LaunchedEffect(state.message){state.message?.let{snackbar.showSnackbar(it);vm.clearMessage()}}
     Scaffold(containerColor=Edu.Canvas,
-        topBar={AppTopBar("ملف الإنجاز","سجلك المهني والشواهد",onBack,
+        topBar={AppTopBar("الإنجازات", onBack = onBack,
             action={TextButton(onClick={profileEditor=true}){Text("الملف الشخصي",color=Edu.Blue)}})},
         bottomBar={EducationBottomNav("portfolio",onNavigate)},snackbarHost={SnackbarHost(snackbar)}
     ){pad->
         LazyColumn(Modifier.fillMaxSize().padding(pad),
             contentPadding=PaddingValues(horizontal=19.dp,vertical=18.dp),
             verticalArrangement=Arrangement.spacedBy(17.dp)){
-            item {
-                WorkspaceMasthead(
-                    kicker = "PROFESSIONAL JOURNAL",
-                    title = state.profile.teacherName.ifBlank { "ملف الإنجاز" },
-                    caption = state.profile.jobTitle.ifBlank { "سجلك المهني والشواهد" },
-                    icon = EduGlyph.FOLDER,
-                    onIconClick = { profileEditor = true }
-                )
-            }
-            item {
-                Row(
-                    Modifier.fillMaxWidth().background(Edu.Paper,RoundedCornerShape(22.dp))
-                        .padding(18.dp),
-                    horizontalArrangement=Arrangement.spacedBy(14.dp),
-                    verticalAlignment=Alignment.CenterVertically
-                ) {
-                    Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                        Text("ملفك المهني",color=Edu.Teal,style=MaterialTheme.typography.labelLarge)
-                        Text(state.profile.schoolName.ifBlank { "سجّل مدرستك" },
-                            color=Edu.Navy,style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.ExtraBold)
-                        Text(state.profile.specialization.ifBlank { "الشهادات، الشواهد، والدورات في مكان واحد" },
-                            color=Edu.Muted,style=MaterialTheme.typography.bodySmall)
-                        TextButton(onClick={profileEditor=true}){Text("تعديل الملف الشخصي")}
-                    }
-                    Column(horizontalAlignment=Alignment.CenterHorizontally) {
-                        Text("${state.allItems.size}",color=Edu.Navy,
-                            style=MaterialTheme.typography.headlineLarge,fontWeight=FontWeight.Black)
-                        Text("إنجاز",color=Edu.Muted)
-                        HorizontalDivider(Modifier.width(68.dp).padding(vertical=8.dp),color=Edu.Line)
-                        Text("${state.allItems.sumOf { it.attachments.size }}",
-                            color=Edu.Teal,style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
-                        Text("مرفق",color=Edu.Muted)
-                    }
-                }
-            }
             item {
                 Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
                     PrimaryButton("إضافة إنجاز",Modifier.weight(1f),icon=EduGlyph.PLUS){add=true}
@@ -101,18 +67,30 @@ fun ProfessionalPortfolio(onBack:()->Unit,onNavigate:(String)->Unit) {
                     }
                 }
             }
-            item { SectionHeader("تصنيفات الإنجاز","اختر فئة لعرض محتواها") }
             item {
-                LazyRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                    item {FilterChipPill("الكل",state.selectedCategory==null){vm.selectCategory(null)}}
-                    items(PortfolioCategory.entries){cat->
-                        FilterChipPill(cat.label,state.selectedCategory==cat){vm.selectCategory(cat)}
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("${state.allItems.size} إنجاز", Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Edu.Navy, fontWeight = FontWeight.Bold)
+                    TextButton(onClick = { showCategories = !showCategories }) {
+                        Text(if (showCategories) "إخفاء التصنيفات" else "تصفية")
                     }
                 }
             }
-            item { SectionHeader("الخط الزمني", "الإنجازات والشواهد مرتبة من الأحدث") }
+            if (showCategories) {
+                item {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        item { FilterChipPill("الكل", state.selectedCategory == null) { vm.selectCategory(null) } }
+                        items(PortfolioCategory.entries) { cat ->
+                            FilterChipPill(cat.label, state.selectedCategory == cat) {
+                                vm.selectCategory(cat)
+                            }
+                        }
+                    }
+                }
+            }
             if(state.items.isEmpty()) item {
-                EmptyState("أضف إنجازك الأول","ارفق شهاداتك وشواهدك في مساحة منظمة",
+                EmptyState("لا توجد إنجازات","",
                     EduGlyph.FOLDER,"إضافة إنجاز"){add=true}
             } else items(state.items,key={it.item.id}){entry->
                 TimelineEntry(
@@ -122,8 +100,7 @@ fun ProfessionalPortfolio(onBack:()->Unit,onNavigate:(String)->Unit) {
                     last=false
                 ) {
                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                        Text("إنجاز محفوظ",Modifier.weight(1f),color=Edu.Muted,
-                            style=MaterialTheme.typography.labelSmall)
+                        Spacer(Modifier.weight(1f))
                         TextButton(onClick={editing=entry}){Text("تعديل")}
                     }
                     if(entry.item.description.isNotBlank()) Text(entry.item.description,color=Edu.Muted)
@@ -142,7 +119,7 @@ fun ProfessionalPortfolio(onBack:()->Unit,onNavigate:(String)->Unit) {
                     Row(verticalAlignment=Alignment.CenterVertically) {
                         TextButton(onClick={
                             attachTo=entry.item.id;attachmentPicker.launch(arrayOf("*/*"))
-                        }) {Glyph(EduGlyph.PLUS,Modifier.size(18.dp));Text("إرفاق ملف")}
+                        }) {Glyph(EduGlyph.PLUS,Modifier.size(18.dp));Text("إرفاق")}
                         Spacer(Modifier.weight(1f))
                         TextButton(onClick={deleting=entry}){Text("حذف الإنجاز",color=Edu.Error)}
                     }
