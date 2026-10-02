@@ -39,10 +39,10 @@
 - The PDF reader renders off the main thread and disposes each page's bitmap on
   removal.
 
-## Legacy screen inventory
+## Removed legacy presentation layer
 
-These older screens exist in the repository but are **not destinations** in
-`MainActivity` and must not be restored by a styling-only patch:
+The older inactive display implementations were deleted, rather than retaining
+recolorable backups that could accidentally become active again:
 
 - `ui/home/HomeScreen.kt`
 - `ui/curriculum/CurriculumScreen.kt`
@@ -51,10 +51,13 @@ These older screens exist in the repository but are **not destinations** in
 - `ui/tools/TeacherToolsScreen.kt`
 - `ui/pdf/PdfViewerScreen.kt`
 - `ui/modern/ModernScreens.kt`
-- `ui/components/*`
+- `ui/components/*` (unused components of those old screens)
 
-Retain corresponding ViewModels and data implementations. Remove unused legacy
-presentation code only after the active-screen build and instrumentation tests pass.
+All five feature ViewModels, their public APIs, data stores, Room repositories,
+AI integration and PDF engines remain untouched. All six active screens are now
+under `ui/premium`, with a single custom Design System and a single navigation
+shell. If any feature depends on a deleted presentation class, treat that as a
+migration defect and fix its call site; do not restore the old visual layout.
 
 ## Quality gates
 
