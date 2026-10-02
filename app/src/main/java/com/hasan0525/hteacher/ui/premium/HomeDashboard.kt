@@ -43,7 +43,8 @@ fun HomeDashboard(onNavigate: (String) -> Unit) {
                     kicker = today,
                     title = profile.teacherName.ifBlank { "صباح العمل" },
                     caption = "لوحة إدارة يومك الدراسي",
-                    icon = EduGlyph.DASH
+                    icon = EduGlyph.DASH,
+                    modifier = Modifier.statusBarsPadding()
                 )
             }
 
