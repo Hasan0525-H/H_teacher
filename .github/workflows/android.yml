@@ -109,7 +109,11 @@ jobs:
           sudo sh -c 'echo KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm" > /etc/udev/rules.d/99-kvm4all.rules'
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-          ls -l /dev/kvm || true
+          # udev may not apply the rule immediately on hosted runners.
+          sudo chmod 666 /dev/kvm
+          ls -l /dev/kvm
+          test -r /dev/kvm && test -w /dev/kvm
+          echo "KVM acceleration is accessible"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -123,12 +127,45 @@ jobs:
           target: aosp_atd
           arch: x86_64
           profile: pixel_2
+          ram-size: 2048M
+          emulator-boot-timeout: 900
           disable-animations: true
           force-avd-creation: true
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
+            # A running emulator process is not sufficient: ADB must see an online device.
             adb wait-for-device
-            adb shell getprop sys.boot_completed
+            for attempt in $(seq 1 24); do
+              if adb shell getprop sys.boot_completed 2>/dev/null | grep -q '^1
+
+      - name: Upload PDF import test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: curriculum-pdf-import-test-report
+          path: |
+            app/build/reports/androidTests/**
+            app/build/outputs/androidTest-results/**
+          if-no-files-found: ignore
+ && \
+                 adb devices | grep -q 
+
+      - name: Upload PDF import test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: curriculum-pdf-import-test-report
+          path: |
+            app/build/reports/androidTests/**
+            app/build/outputs/androidTest-results/**
+          if-no-files-found: ignore
+emulator-[0-9]*\\sdevice'; then
+                break
+              fi
+              sleep 5
+            done
+            adb devices -l
+            test "$(adb shell getprop sys.boot_completed | tr -d '\\r')" = "1"
             gradle :app:connectedDebugAndroidTest --stacktrace
 
       - name: Upload PDF import test report
