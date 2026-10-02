@@ -32,6 +32,7 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
     val vm:ExamGeneratorViewModel=viewModel(factory=ExamGeneratorViewModelFactory(app))
     val state by vm.uiState.collectAsStateWithLifecycle()
     val snackbar=remember{SnackbarHostState()}
+    var advanced by remember { mutableStateOf(false) }
     var step by remember{mutableIntStateOf(0)}
     var bank by remember{mutableStateOf(false)}
     var addQuestion by remember{mutableStateOf(false)}
@@ -44,21 +45,13 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
     }
     LaunchedEffect(state.message){state.message?.let{snackbar.showSnackbar(it);vm.clearMessage()}}
     Scaffold(containerColor=Edu.Canvas,
-        topBar={AppTopBar("استوديو الاختبارات","من الإعداد إلى الطباعة",onBack)},
+        topBar={AppTopBar("الاختبارات", onBack = onBack)},
         bottomBar={EducationBottomNav("exams",onNavigate)},
         snackbarHost={SnackbarHost(snackbar)}
     ){pad->
         LazyColumn(Modifier.fillMaxSize().padding(pad),
             contentPadding=PaddingValues(horizontal=19.dp,vertical=18.dp),
             verticalArrangement=Arrangement.spacedBy(17.dp)){
-            item {
-                WorkspaceMasthead(
-                    kicker = "ASSESSMENT STUDIO",
-                    title = "محرر الاختبارات",
-                    caption = "محرر من المحتوى إلى نموذج الطباعة",
-                    icon = EduGlyph.EXAM
-                )
-            }
             item {
                 WorkflowSteps(
                     current = step,
@@ -70,12 +63,12 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
             }
             when(step) {
                 0 -> {
-                    item { SectionHeader("اختر المحتوى","ابدأ بالمادة والمنهج المطلوبين") }
+                    item { SectionHeader("اختر المادة") }
                     item {
                         AppCard {
                             Text("المادة",fontWeight=FontWeight.Bold,color=Edu.Navy)
                             if(state.subjects.isEmpty()) {
-                                EmptyState("لا توجد مواد","أضف مادة من مكتبة المناهج",
+                                EmptyState("أضف مادة أولاً","",
                                     EduGlyph.BOOK,"انتقل للمكتبة"){onNavigate("curricula")}
                             } else LazyRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                                 items(state.subjects,key={it.id}) { subject ->
@@ -93,19 +86,12 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                         }
                     }
                     item {
-                        Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                            StatCard("أسئلة محفوظة",state.questions.size.toString(),EduGlyph.EXAM,Modifier.weight(1f))
-                            StatCard("دروس مفهرسة",state.indexedLessonCount.toString(),EduGlyph.BOOK,Modifier.weight(1f),
-                                Edu.Teal)
-                        }
-                    }
-                    item {
-                        PrimaryButton("التالي: مواصفات الاختبار",Modifier.fillMaxWidth(),
+                        PrimaryButton("التالي",Modifier.fillMaxWidth(),
                             enabled=state.selectedSubjectId!=null,icon=EduGlyph.ARROW){step=1}
                     }
                 }
                 1 -> {
-                    item { SectionHeader("المواصفات","تحكم في نوع الاختبار وصعوبته") }
+                    item { SectionHeader("إعداد الاختبار") }
                     item {
                         AppCard {
                             FormField("اسم الاختبار",state.title,vm::updateTitle,Modifier.fillMaxWidth())
@@ -113,6 +99,10 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                                 FormField("عدد الأسئلة",state.questionCount,{vm.updateQuestionCount(it.filter(Char::isDigit))},Modifier.weight(1f))
                                 FormField("الدرجة الكلية",state.totalMarks,{vm.updateTotalMarks(it.filter(Char::isDigit))},Modifier.weight(1f))
                             }
+                            TextButton(onClick = { advanced = !advanced }) {
+                                Text(if (advanced) "إخفاء الخيارات" else "خيارات إضافية", color = Edu.Teal)
+                            }
+                            if (advanced) {
                             Text("أنواع الأسئلة",fontWeight=FontWeight.Bold,color=Edu.Navy)
                             QuestionType.entries.forEach{kind->
                                 Row(verticalAlignment=Alignment.CenterVertically) {
@@ -129,11 +119,14 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                                     FilterChipPill(kind.label,state.selectedDifficulty==kind){vm.selectDifficulty(kind)}
                                 }
                             }
+                            }
                         }
                     }
+                    if (advanced) {
                     item {
                         FeatureCard("بنك الأسئلة","إضافة وتحرير الأسئلة المحفوظة",EduGlyph.FOLDER,
                             Modifier.fillMaxWidth(),Edu.Teal){bank=true}
+                    }
                     }
                     item {
                         Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
@@ -142,9 +135,10 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                                 enabled=!state.isAiGenerating){vm.generateExam();step=2}
                         }
                     }
+                    if (advanced) {
                     item {
                         AppCard {
-                            SectionHeader("إنشاء ذكي","باستخدام الدروس المفهرسة فقط")
+                            SectionHeader("إنشاء بالذكاء الاصطناعي")
                             if(state.isAiGenerating) LoadingView("جارٍ إنشاء الأسئلة")
                             PrimaryButton("توليد الأسئلة بالذكاء الاصطناعي",
                                 Modifier.fillMaxWidth(),icon=EduGlyph.SPARK,
@@ -155,13 +149,14 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                             else if(state.indexedLessonCount==0)Text("أضف محتوى الدروس في المكتبة",color=Edu.Muted)
                         }
                     }
+                    }
                 }
                 else -> {
-                    item { SectionHeader("نتيجة الاختبار","معاينة وتصدير نسخة الطباعة") }
+                    item { SectionHeader("الاختبار") }
                     val exam=state.generatedExam
                     if(exam==null) {
                         item {
-                            EmptyState("لم يُنشأ الاختبار بعد","راجع الشروط والأسئلة ثم أنشئ الاختبار",
+                            EmptyState("لم يُنشأ الاختبار","",
                                 EduGlyph.EXAM,"العودة للإعداد"){step=1}
                         }
                     } else {
@@ -209,7 +204,7 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                                             HorizontalDivider(color=Edu.Line)
                                         }
                                     }
-                                    Text("نهاية الأسئلة",color=Edu.Muted,
+                                    Text("",color=Edu.Muted,
                                         style=MaterialTheme.typography.labelMedium,
                                         modifier=Modifier.align(Alignment.CenterHorizontally))
                                 }
