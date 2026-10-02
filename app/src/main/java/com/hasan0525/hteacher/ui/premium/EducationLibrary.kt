@@ -73,12 +73,12 @@ fun EducationLibrary(onBack:()->Unit,onNavigate:(String)->Unit,onOpenPdf:(String
     LaunchedEffect(state.message) {
         state.message?.let{snackbar.showSnackbar(it);vm.clearMessage()}
     }
+    var showFilters by rememberSaveable { mutableStateOf(false) }
     val displayed = state.curricula.filter { it.title.contains(search, ignoreCase = true) }
 
     Scaffold(
         containerColor = Edu.Canvas,
-        topBar = { AppTopBar("مكتبة المناهج", "مكتبتك التعليمية الخاصة", onBack,
-            action = { TextButton(onClick = { addSubject = true }) { Text("+ مادة") } }) },
+        topBar = { AppTopBar("المكتبة", onBack = onBack) },
         bottomBar = { EducationBottomNav("curricula", onNavigate) },
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
@@ -98,22 +98,13 @@ fun EducationLibrary(onBack:()->Unit,onNavigate:(String)->Unit,onOpenPdf:(String
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                WorkspaceMasthead(
-                    kicker = "LIBRARY / المعلم H",
-                    title = "رفّ المناهج",
-                    caption = "${state.curricula.size} كتاب في المجموعة المحددة",
-                    icon = EduGlyph.BOOK,
-                    onIconClick = { if (!state.isImporting) picker.launch(arrayOf("application/pdf")) }
-                )
-            }
-            item {
                 Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(
                         value = search,
                         onValueChange = { search = it },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        placeholder = { Text("ابحث باسم الكتاب...") },
+                        placeholder = { Text("بحث") },
                         leadingIcon = { Glyph(EduGlyph.SEARCH, Modifier.size(21.dp), Edu.Muted) },
                         shape = RoundedCornerShape(19.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -125,56 +116,51 @@ fun EducationLibrary(onBack:()->Unit,onNavigate:(String)->Unit,onOpenPdf:(String
                 }
             }
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("المواد", color = Edu.Navy, fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                        TextButton(onClick = { addSubject = true }) { Text("إضافة مادة") }
-                        state.subjects.firstOrNull { it.id == state.selectedSubjectId }?.let { selected ->
-                            TextButton(onClick = { manageSubject = selected.id }) { Text("إدارة") }
-                        }
-                    }
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(state.subjects, key = { it.id }) { subject ->
-                            FilterChipPill(subject.name, subject.id == state.selectedSubjectId) {
-                                vm.selectSubject(subject.id)
-                            }
-                        }
-                        item { FilterChipPill("+", false) { addSubject = true } }
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("${displayed.size} كتاب", Modifier.weight(1f),
+                        color = Edu.Navy, style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold)
+                    TextButton(onClick = { showFilters = !showFilters }) {
+                        Text(if (showFilters) "إخفاء الفلاتر" else "تصفية", color = Edu.Teal)
                     }
                 }
             }
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("الصفوف", color = Edu.Navy, fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                        TextButton(onClick = { addGrade = true }) { Text("إضافة صف") }
-                        state.grades.firstOrNull { it.id == state.selectedGradeId }?.let { selected ->
-                            TextButton(onClick = { manageGrade = selected.id }) { Text("إدارة") }
-                        }
-                    }
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(state.grades, key = { it.id }) { grade ->
-                            FilterChipPill(grade.name, grade.id == state.selectedGradeId) {
-                                vm.selectGrade(grade.id)
+            if (showFilters) {
+                item {
+                    Column(Modifier.padding(horizontal = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("المواد", Modifier.weight(1f), color = Edu.Navy)
+                            TextButton(onClick = { addSubject = true }) { Text("+ مادة") }
+                            state.subjects.firstOrNull { it.id == state.selectedSubjectId }?.let { selected ->
+                                TextButton(onClick = { manageSubject = selected.id }) { Text("تعديل") }
                             }
                         }
-                        item { FilterChipPill("+", false) { addGrade = true } }
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(state.subjects, key = { it.id }) { subject ->
+                                FilterChipPill(subject.name, subject.id == state.selectedSubjectId) {
+                                    vm.selectSubject(subject.id)
+                                }
+                            }
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("الصفوف", Modifier.weight(1f), color = Edu.Navy)
+                            TextButton(onClick = { addGrade = true }) { Text("+ صف") }
+                            state.grades.firstOrNull { it.id == state.selectedGradeId }?.let { selected ->
+                                TextButton(onClick = { manageGrade = selected.id }) { Text("تعديل") }
+                            }
+                        }
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(state.grades, key = { it.id }) { grade ->
+                                FilterChipPill(grade.name, grade.id == state.selectedGradeId) {
+                                    vm.selectGrade(grade.id)
+                                }
+                            }
+                        }
                     }
-                }
-            }
-            item {
-                Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("أغلفة الكتب", color = Edu.Navy, fontWeight = FontWeight.ExtraBold,
-                        style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                    Text("${displayed.size} ملف", color = Edu.Muted, style = MaterialTheme.typography.bodyMedium)
                 }
             }
             if (displayed.isEmpty()) {
@@ -183,7 +169,7 @@ fun EducationLibrary(onBack:()->Unit,onNavigate:(String)->Unit,onOpenPdf:(String
                         RoundedCornerShape(25.dp))) {
                         EmptyState(
                             "لا توجد كتب",
-                            "اختر مادة وصفًا أو أضف كتاب PDF",
+                            "اضغط إضافة PDF",
                             EduGlyph.BOOK,
                             "اختيار PDF"
                         ) { picker.launch(arrayOf("application/pdf")) }
@@ -198,7 +184,7 @@ fun EducationLibrary(onBack:()->Unit,onNavigate:(String)->Unit,onOpenPdf:(String
                         pair.forEach { course ->
                             LibraryBookCover(
                                 title = course.title,
-                                subtitle = "افتح صفحة الكتاب",
+                                subtitle = "",
                                 index = displayed.indexOfFirst { it.id == course.id },
                                 modifier = Modifier.weight(1f)
                             ) { openCourse = course.id }
@@ -224,7 +210,6 @@ fun EducationLibrary(onBack:()->Unit,onNavigate:(String)->Unit,onOpenPdf:(String
                         .padding(horizontal = 20.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(15.dp)
                 ) {
-                    Text("الكتاب الحالي", color = Edu.Teal, style = MaterialTheme.typography.labelLarge)
                     Text(course.title, color = Edu.Navy,
                         style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
                     PrimaryButton(
@@ -250,7 +235,7 @@ fun EducationLibrary(onBack:()->Unit,onNavigate:(String)->Unit,onOpenPdf:(String
                     }
                     val units = state.units.filter { it.curriculumId == course.id }
                     if (units.isEmpty()) {
-                        EmptyState("لم تُضف وحدات", "أنشئ وحدة لتنظيم محتوى هذا الكتاب", EduGlyph.FOLDER)
+                        EmptyState("لا توجد وحدات", "", EduGlyph.FOLDER)
                     }
                     units.forEachIndexed { index, unit ->
                         Column(
