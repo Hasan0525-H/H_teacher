@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
  */
 enum class EduGlyph {
     DASH, BOOK, EXAM, FOLDER, GROUP, DATE, CHART,
-    PDF, PLUS, ARROW, SEARCH, SPARK, CHECK, DOC, MORE, BACK
+    PDF, PLUS, ARROW, SEARCH, SPARK, CHECK, DOC, MORE, BACK, BELL
 }
 
 @Composable
@@ -121,6 +121,21 @@ fun Glyph(name: EduGlyph, modifier: Modifier = Modifier, tint: Color = Edu.Teal)
                 drawPath(star, tint, style=Stroke(width=w, cap=StrokeCap.Round))
             }
             EduGlyph.CHECK -> { seg(3f, 12f, 9f, 18f); seg(9f, 18f, 21f, 5f) }
+            EduGlyph.BELL -> {
+                val bell = Path().apply {
+                    moveTo(7f * u, 16f * u)
+                    lineTo(7f * u, 10f * u)
+                    quadraticBezierTo(7f * u, 5f * u, 12f * u, 5f * u)
+                    quadraticBezierTo(17f * u, 5f * u, 17f * u, 10f * u)
+                    lineTo(17f * u, 16f * u)
+                    lineTo(20f * u, 19f * u)
+                    lineTo(4f * u, 19f * u)
+                    close()
+                }
+                drawPath(bell, tint, style = Stroke(width = w, cap = StrokeCap.Round))
+                seg(12f, 3f, 12f, 5f)
+                seg(10f, 21f, 14f, 21f)
+            }
             EduGlyph.MORE -> { circle(5f, 12f, 1f); circle(12f, 12f, 1f); circle(19f, 12f, 1f) }
         }
     }
