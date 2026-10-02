@@ -17,8 +17,8 @@
 ## Design system
 
 - `EducationDesign.kt` defines the **Workbench 2026** token palette, spacing, custom-drawn
-  `EduGlyph` icon family, custom floating dock, inputs, actions and empty/loading states.
-- `ExperienceComponents.kt` defines mastheads, workstream rows, illustrated book covers,
+  custom floating dock, inputs, actions and empty/loading states.
+- `WorkbenchGlyphs.kt` defines the independent H/Line vector icon family (rounded 24-unit originals, RTL-aware navigation arrows).\n- `ExperienceComponents.kt` defines mastheads, workstream rows, illustrated book covers,
   progress stages and journal timeline layouts, rather than recoloring repeated card lists.
 - `ui/theme/{Theme,Type,Shapes}.kt` supplies the matching Material 3 color scheme,
   Arabic-capable type scale and shape hierarchy.

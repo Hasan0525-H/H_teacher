@@ -3,7 +3,6 @@ package com.hasan0525.hteacher.ui.premium
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -15,10 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,39 +43,6 @@ object EduSpace {
     val md = 18.dp
     val lg = 24.dp
     val xl = 32.dp
-}
-
-enum class EduGlyph { DASH, BOOK, EXAM, FOLDER, GROUP, DATE, CHART, PDF, PLUS, ARROW, SEARCH, SPARK, CHECK, DOC, MORE, BACK }
-
-@Composable
-fun Glyph(name: EduGlyph, modifier: Modifier = Modifier, tint: Color = Edu.Blue) {
-    Canvas(modifier.size(25.dp)) {
-        val unit = size.minDimension / 24f
-        fun line(a: Float,b: Float,c: Float,d: Float) {
-            drawLine(tint, Offset(a*unit,b*unit),Offset(c*unit,d*unit),strokeWidth=1.8f*unit)
-        }
-        fun rect(x:Float,y:Float,w:Float,h:Float,r:Float=2f) {
-            drawRoundRect(tint, Offset(x*unit,y*unit),Size(w*unit,h*unit),
-                androidx.compose.ui.geometry.CornerRadius(r*unit),style=Stroke(1.7f*unit))
-        }
-        when(name) {
-            EduGlyph.DASH -> { rect(3f,3f,8f,8f);rect(13f,3f,8f,5f);rect(3f,13f,8f,8f);rect(13f,10f,8f,11f) }
-            EduGlyph.BOOK -> { line(12f,5f,12f,20f);line(12f,7f,5f,5f);line(5f,5f,3f,7f);line(3f,7f,3f,19f);line(3f,19f,12f,21f);line(12f,7f,19f,5f);line(19f,5f,21f,7f);line(21f,7f,21f,19f);line(21f,19f,12f,21f)}
-            EduGlyph.EXAM -> { rect(5f,4f,14f,17f,2f);line(9f,3f,15f,3f);line(9f,9f,10f,10f);line(10f,10f,12f,7f);line(14f,9f,17f,9f);line(9f,14f,10f,15f);line(10f,15f,12f,12f);line(14f,14f,17f,14f)}
-            EduGlyph.FOLDER -> { line(3f,8f,3f,19f);line(3f,19f,21f,19f);line(21f,19f,21f,8f);line(21f,8f,11f,8f);line(11f,8f,9f,5f);line(9f,5f,3f,5f);line(3f,5f,3f,8f)}
-            EduGlyph.GROUP -> { drawCircle(tint,3f*unit,Offset(9f*unit,8f*unit),style=Stroke(1.7f*unit));drawCircle(tint,2f*unit,Offset(17f*unit,9f*unit),style=Stroke(1.7f*unit));line(3f,20f,3f,17f);line(3f,17f,6f,14f);line(6f,14f,12f,14f);line(12f,14f,15f,17f);line(15f,17f,15f,20f);line(15f,20f,3f,20f);line(17f,15f,21f,17f);line(21f,17f,21f,20f)}
-            EduGlyph.DATE -> {rect(3f,5f,18f,16f);line(3f,10f,21f,10f);line(8f,3f,8f,7f);line(16f,3f,16f,7f);line(8f,15f,10f,17f);line(10f,17f,16f,13f)}
-            EduGlyph.CHART -> {line(3f,20f,21f,20f);line(3f,20f,3f,5f);line(6f,16f,11f,11f);line(11f,11f,14f,14f);line(14f,14f,21f,5f)}
-            EduGlyph.PDF, EduGlyph.DOC -> {rect(5f,2f,14f,20f);line(9f,9f,15f,9f);line(9f,13f,15f,13f);line(9f,17f,14f,17f)}
-            EduGlyph.PLUS -> {line(12f,4f,12f,20f);line(4f,12f,20f,12f)}
-            EduGlyph.ARROW -> {line(5f,12f,19f,12f);line(13f,6f,19f,12f);line(19f,12f,13f,18f)}
-            EduGlyph.BACK -> {line(19f,12f,5f,12f);line(11f,6f,5f,12f);line(5f,12f,11f,18f)}
-            EduGlyph.SEARCH -> {drawCircle(tint,6f*unit,Offset(10f*unit,10f*unit),style=Stroke(1.8f*unit));line(14f,14f,21f,21f)}
-            EduGlyph.SPARK -> {line(12f,2f,12f,22f);line(3f,12f,21f,12f);line(6f,6f,18f,18f);line(18f,6f,6f,18f)}
-            EduGlyph.CHECK -> {line(4f,12f,10f,18f);line(10f,18f,20f,6f)}
-            EduGlyph.MORE -> { listOf(6f,12f,18f).forEach{drawCircle(tint,1.6f*unit,Offset(it*unit,12f*unit))} }
-        }
-    }
 }
 
 @Composable
