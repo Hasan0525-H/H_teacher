@@ -45,52 +45,12 @@ fun ClassroomHub(onBack:()->Unit,onNavigate:(String)->Unit){
     LaunchedEffect(state.message){state.message?.let{snackbar.showSnackbar(it);vm.clearMessage()}}
     val present=state.attendance.count{it.dateEpochDay==state.dateEpochDay && it.status==AttendanceStatus.PRESENT.storageKey}
     Scaffold(containerColor=Edu.Canvas,
-        topBar={AppTopBar("إدارة الفصل","الطلاب والتقييم والحضور",onBack)},
+        topBar={AppTopBar("الطلاب", onBack = onBack)},
         bottomBar={EducationBottomNav("tools",onNavigate)},snackbarHost={SnackbarHost(snackbar)}
     ){pad->
         LazyColumn(Modifier.fillMaxSize().padding(pad),
             contentPadding=PaddingValues(horizontal=19.dp,vertical=18.dp),
             verticalArrangement=Arrangement.spacedBy(15.dp)) {
-            item {
-                WorkspaceMasthead(
-                    kicker="CLASSROOM / مركز الفصل",
-                    title="إدارة الفصل",
-                    caption="بيانات الطلاب، سجل الحضور، والتقييم",
-                    icon=EduGlyph.GROUP
-                )
-            }
-            item {
-                Column(
-                    Modifier.fillMaxWidth().background(Edu.Paper,RoundedCornerShape(22.dp))
-                        .padding(18.dp),
-                    verticalArrangement=Arrangement.spacedBy(13.dp)
-                ) {
-                    Row(verticalAlignment=Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("حضور اليوم",color=Edu.Muted,
-                                style=MaterialTheme.typography.labelLarge)
-                            Text("$present / ${state.students.size}",color=Edu.Navy,
-                                style=MaterialTheme.typography.headlineLarge,
-                                fontWeight=FontWeight.Black)
-                        }
-                        Column(horizontalAlignment=Alignment.End) {
-                            Text("${state.gradeRecords.size}",color=Edu.Teal,
-                                style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
-                            Text("تقييم محفوظ",color=Edu.Muted,
-                                style=MaterialTheme.typography.labelMedium)
-                        }
-                    }
-                    LinearProgressIndicator(
-                        progress={if(state.students.isEmpty())0f else
-                            present.toFloat()/state.students.size.toFloat()},
-                        modifier=Modifier.fillMaxWidth().height(7.dp),
-                        color=Edu.Teal,
-                        trackColor=Edu.Line
-                    )
-                    Text("إجمالي الطلاب: ${state.students.size}",color=Edu.Muted,
-                        style=MaterialTheme.typography.bodySmall)
-                }
-            }
             item {
                 LazyRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                     items(TeacherToolsSection.entries){section->
@@ -102,11 +62,11 @@ fun ClassroomHub(onBack:()->Unit,onNavigate:(String)->Unit){
             }
             when(state.section){
                 TeacherToolsSection.STUDENTS -> {
-                    item { SectionHeader("قائمة الطلاب",action="+ إضافة",onAction={addStudent=true}) }
-                    item { FormField("بحث عن طالب",search,{search=it},Modifier.fillMaxWidth()) }
+                    item { SectionHeader("الطلاب",action="+ إضافة",onAction={addStudent=true}) }
+                    item { FormField("بحث",search,{search=it},Modifier.fillMaxWidth()) }
                     val filtered=state.students.filter{it.name.contains(search,true) || it.studentNumber.contains(search,true)}
                     if(filtered.isEmpty())item{
-                        EmptyState("لا يوجد طلاب","أضف الطلاب لتسجيل الحضور والدرجات",
+                        EmptyState("لا يوجد طلاب","",
                             EduGlyph.GROUP,"إضافة طالب"){addStudent=true}
                     }else items(filtered,key={it.id}){student->
                         // Compact roster rows replace the old card grid.
@@ -120,7 +80,7 @@ fun ClassroomHub(onBack:()->Unit,onNavigate:(String)->Unit){
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(student.name,color=Edu.Navy,fontWeight=FontWeight.Bold)
-                                Text(student.studentNumber.ifBlank{"بدون رقم"},color=Edu.Muted,
+                                if (student.studentNumber.isNotBlank()) Text(student.studentNumber,color=Edu.Muted,
                                     style=MaterialTheme.typography.labelSmall)
                             }
                             TextButton(onClick={deleteStudent=student.id}){Text("إزالة",color=Edu.Error)}
@@ -130,16 +90,16 @@ fun ClassroomHub(onBack:()->Unit,onNavigate:(String)->Unit){
                 TeacherToolsSection.ATTENDANCE -> {
                     item {
                         AppCard {
-                            SectionHeader("سجل الحضور","اختر التاريخ وسجل حالة كل طالب")
+                            SectionHeader("الحضور")
                             Row(verticalAlignment=Alignment.CenterVertically) {
-                                SecondaryButton("اليوم السابق",Modifier.weight(1f)){vm.previousDay()}
+                                SecondaryButton("السابق",Modifier.weight(1f)){vm.previousDay()}
                                 Text(LocalDate.ofEpochDay(state.dateEpochDay).toString(),
                                     Modifier.weight(1f),color=Edu.Navy)
                                 SecondaryButton("التالي",Modifier.weight(1f)){vm.nextDay()}
                             }
                         }
                     }
-                    if(state.students.isEmpty())item{EmptyState("لا يوجد طلاب","أضف الطلاب أولًا",EduGlyph.GROUP)}
+                    if(state.students.isEmpty())item{EmptyState("لا يوجد طلاب","",EduGlyph.GROUP)}
                     else items(state.students,key={it.id}){student->
                         AppCard {
                             Text(student.name,color=Edu.Navy,fontWeight=FontWeight.Bold)
@@ -155,7 +115,7 @@ fun ClassroomHub(onBack:()->Unit,onNavigate:(String)->Unit){
                     }
                 }
                 TeacherToolsSection.GRADES -> {
-                    item{SectionHeader("سجل الدرجات","اختر طالبًا ثم أضف تقييمًا")}
+                    item{SectionHeader("الدرجات")}
                     if(state.students.isEmpty())item{EmptyState("لا يوجد طلاب","أضف طلابك أولًا",EduGlyph.GROUP)}
                     else{
                         item {
@@ -172,7 +132,7 @@ fun ClassroomHub(onBack:()->Unit,onNavigate:(String)->Unit){
                         }
                         val records=state.gradeRecords.filter{it.studentId==studentId}
                         if(records.isEmpty())item{
-                            EmptyState("لا توجد تقييمات","أضف أول تقييم للطالب",EduGlyph.CHART)
+                            EmptyState("لا توجد تقييمات","",EduGlyph.CHART)
                         }else items(records,key={it.id}){record->
                             AppCard {
                                 Row(verticalAlignment=Alignment.CenterVertically) {
@@ -189,9 +149,7 @@ fun ClassroomHub(onBack:()->Unit,onNavigate:(String)->Unit){
                 TeacherToolsSection.REPORTS -> {
                     item {
                         AppCard {
-                            SectionHeader("تقرير الفصل","ملف واحد جاهز للطباعة")
-                            Text("يتضمن الطلاب والحضور والدرجات الحالية.",
-                                color=Edu.Muted,style=MaterialTheme.typography.bodyMedium)
+                            SectionHeader("التقرير")
                             PrimaryButton(if(state.isExporting)"جارٍ التصدير..." else "تصدير تقرير PDF",
                                 Modifier.fillMaxWidth(),enabled=!state.isExporting,icon=EduGlyph.PDF){
                                 exportPicker.launch("تقرير-الطلاب.pdf")
