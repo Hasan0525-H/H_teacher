@@ -19,13 +19,13 @@ class PdfImportTestProvider : ContentProvider() {
     ): Cursor {
         val columns = projection ?: arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE)
         return MatrixCursor(columns).also { result ->
-            val row = columns.map { column ->
-                when (column) {
+            val row = Array<Any?>(columns.size) { index ->
+                when (columns[index]) {
                     OpenableColumns.DISPLAY_NAME -> uri.lastPathSegment ?: "sample.pdf"
                     OpenableColumns.SIZE -> if (uri.lastPathSegment?.startsWith("oversized_") == true) 80L * 1024L * 1024L + 1L else 1024L
                     else -> null
                 }
-            }.toTypedArray()
+            }
             result.addRow(row)
         }
     }
