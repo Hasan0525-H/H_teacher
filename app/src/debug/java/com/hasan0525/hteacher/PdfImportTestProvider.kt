@@ -22,7 +22,7 @@ class PdfImportTestProvider : ContentProvider() {
             val row = columns.map { column ->
                 when (column) {
                     OpenableColumns.DISPLAY_NAME -> uri.lastPathSegment ?: "sample.pdf"
-                    OpenableColumns.SIZE -> 1024L
+                    OpenableColumns.SIZE -> if (uri.lastPathSegment?.startsWith("oversized_") == true) 80L * 1024L * 1024L + 1L else 1024L
                     else -> null
                 }
             }.toTypedArray()
@@ -32,6 +32,10 @@ class PdfImportTestProvider : ContentProvider() {
 
     override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor {
         val path = File(requireNotNull(context).cacheDir, uri.lastPathSegment ?: "sample.pdf")
+        if (uri.lastPathSegment?.startsWith("invalid_") == true) {
+            path.writeText("This is not a PDF.")
+            return ParcelFileDescriptor.open(path, ParcelFileDescriptor.MODE_READ_ONLY)
+        }
         val document = PdfDocument()
         try {
             val page = document.startPage(PdfDocument.PageInfo.Builder(400, 500, 1).create())

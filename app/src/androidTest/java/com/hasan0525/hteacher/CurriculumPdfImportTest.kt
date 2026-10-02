@@ -21,6 +21,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import com.hasan0525.hteacher.data.files.CurriculumFileStore
 
 @RunWith(AndroidJUnit4::class)
 class CurriculumPdfImportTest {
@@ -77,4 +78,30 @@ class CurriculumPdfImportTest {
             Intents.release()
         }
     }
+    @Test
+    fun invalidPdfIsRejectedWithoutLeavingLocalFiles() {
+        val app = compose.activity.application as HTeacherApplication
+        val files = File(app.filesDir, "curricula")
+        val before = files.listFiles()?.map { it.name }?.toSet().orEmpty()
+        val uri = Uri.parse("content://com.hasan0525.hteacher.testpdf/invalid_pdf.pdf")
+        val failure = runBlocking {
+            runCatching { CurriculumFileStore(app).importPdf(uri) }.exceptionOrNull()
+        }
+        assertTrue("Invalid PDF must produce a validation error", failure is IllegalArgumentException)
+        assertTrue("Invalid PDF left a copied file", files.listFiles()?.map { it.name }?.toSet().orEmpty() == before)
+    }
+
+    @Test
+    fun oversizedPdfIsRejectedBeforeCopy() {
+        val app = compose.activity.application as HTeacherApplication
+        val files = File(app.filesDir, "curricula")
+        val before = files.listFiles()?.map { it.name }?.toSet().orEmpty()
+        val uri = Uri.parse("content://com.hasan0525.hteacher.testpdf/oversized_pdf.pdf")
+        val failure = runBlocking {
+            runCatching { CurriculumFileStore(app).importPdf(uri) }.exceptionOrNull()
+        }
+        assertTrue("Oversized PDF must be rejected", failure is IllegalArgumentException)
+        assertTrue("Oversized PDF left a copied file", files.listFiles()?.map { it.name }?.toSet().orEmpty() == before)
+    }
+
 }
