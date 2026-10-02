@@ -89,19 +89,6 @@ fun EducationPdfReader(filePath: String, title: String, onBack: () -> Unit) {
                         .navigationBarsPadding().padding(horizontal = 17.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    if (page.pageCount > 1) {
-                        Slider(
-                            value = page.pageIndex.toFloat(),
-                            onValueChange = { pageIndex = it.toInt().coerceIn(0, page.pageCount - 1) },
-                            valueRange = 0f..(page.pageCount - 1).toFloat(),
-                            colors = SliderDefaults.colors(
-                                thumbColor = Edu.Amber,
-                                activeTrackColor = Edu.Amber,
-                                inactiveTrackColor = Color.White.copy(alpha = .25f)
-                            ),
-                            modifier = Modifier.fillMaxWidth().height(22.dp)
-                        )
-                    }
                     Row(
                         Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
