@@ -76,8 +76,6 @@ fun EducationPdfReader(filePath: String, title: String, onBack: () -> Unit) {
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(title.ifBlank { "قراءة المنهج" }, color = Color.White,
                         maxLines = 1, fontWeight = FontWeight.Bold)
-                    Text("وضع القراءة", color = Color.White.copy(alpha = .64f),
-                        style = MaterialTheme.typography.labelSmall)
                 }
                 TextButton(onClick = { zoom = 1f; translation = Offset.Zero }) {
                     Text("احتواء", color = Color.White)
@@ -158,16 +156,6 @@ fun EducationPdfReader(filePath: String, title: String, onBack: () -> Unit) {
             is ReaderState.Ready -> {
                 Column(Modifier.fillMaxSize().padding(padding),
                     horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 9.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("صفحة ${state.page.pageIndex + 1} من ${state.page.pageCount}",
-                            Modifier.weight(1f), color = Color.White.copy(alpha = .8f),
-                            style = MaterialTheme.typography.bodySmall)
-                        Text("${(zoom * 100).toInt()}%",
-                            color = Edu.Amber, style = MaterialTheme.typography.bodySmall)
-                    }
                     Box(
                         Modifier.fillMaxWidth().weight(1f).padding(horizontal = 13.dp)
                             .clip(RoundedCornerShape(topStart = 15.dp, topEnd = 15.dp))
