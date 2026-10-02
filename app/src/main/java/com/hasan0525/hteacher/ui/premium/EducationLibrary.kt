@@ -31,6 +31,7 @@ import com.hasan0525.hteacher.data.local.entity.CurriculumUnitEntity
 import com.hasan0525.hteacher.ui.curriculum.CurriculumViewModel
 import com.hasan0525.hteacher.ui.curriculum.CurriculumViewModelFactory
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EducationLibrary(onBack:()->Unit,onNavigate:(String)->Unit,onOpenPdf:(String,String)->Unit) {
     val context=LocalContext.current
