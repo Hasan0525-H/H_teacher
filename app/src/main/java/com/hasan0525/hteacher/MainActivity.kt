@@ -4,6 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.togetherWith
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -38,7 +44,16 @@ class MainActivity : ComponentActivity() {
                     BackHandler(route != "home") {
                         route = if (route == "pdf") "curricula" else "home"
                     }
-                    when(route) {
+                    AnimatedContent(
+                        targetState = route,
+                        transitionSpec = {
+                            (fadeIn(animationSpec = tween(210)) +
+                                slideInHorizontally(animationSpec = tween(210)) { it / 12 })
+                                .togetherWith(fadeOut(animationSpec = tween(130)))
+                        },
+                        label = "main navigation"
+                    ) { current ->
+                    when(current) {
                         "curricula" -> EducationLibrary(
                             onBack = { route = "home" },
                             onNavigate = ::navigate,
@@ -55,6 +70,7 @@ class MainActivity : ComponentActivity() {
                             filePath=pdfPath,title=pdfTitle,onBack={route="curricula"}
                         )
                         else -> HomeDashboard(onNavigate=::navigate)
+                    }
                     }
                 }
             }
