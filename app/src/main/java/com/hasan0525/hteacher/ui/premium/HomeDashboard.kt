@@ -3,129 +3,172 @@ package com.hasan0525.hteacher.ui.premium
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.ui.platform.LocalContext
 import com.hasan0525.hteacher.HTeacherApplication
+import com.hasan0525.hteacher.data.repository.AppSettings
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
-fun HomeDashboard(onNavigate:(String)->Unit) {
-    val app=LocalContext.current.applicationContext as HTeacherApplication
-    val repo=app.container.teacherRepository
-    val files by repo.curricula.collectAsStateWithLifecycle(initialValue=emptyList())
-    val students by repo.students.collectAsStateWithLifecycle(initialValue=emptyList())
-    val portfolio by repo.portfolioItems.collectAsStateWithLifecycle(initialValue=emptyList())
+fun HomeDashboard(onNavigate: (String) -> Unit) {
+    val app = LocalContext.current.applicationContext as HTeacherApplication
+    val repo = app.container.teacherRepository
+    val files by repo.curricula.collectAsStateWithLifecycle(initialValue = emptyList())
+    val students by repo.students.collectAsStateWithLifecycle(initialValue = emptyList())
+    val portfolio by repo.portfolioItems.collectAsStateWithLifecycle(initialValue = emptyList())
     val profile by app.container.settingsRepository.settings.collectAsStateWithLifecycle(
-        initialValue=com.hasan0525.hteacher.data.repository.AppSettings()
+        initialValue = AppSettings()
     )
-    Scaffold(containerColor=Edu.Canvas,bottomBar={EducationBottomNav("home",onNavigate)}) { pad ->
+    val today = remember { LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE، d MMMM", Locale("ar"))) }
+
+    Scaffold(containerColor = Edu.Canvas, bottomBar = { EducationBottomNav("home", onNavigate) }) { insets ->
         LazyColumn(
-            Modifier.fillMaxSize().padding(pad),
-            contentPadding=PaddingValues(bottom=32.dp),
-            verticalArrangement=Arrangement.spacedBy(22.dp)
+            modifier = Modifier.fillMaxSize().padding(insets),
+            contentPadding = PaddingValues(bottom = 34.dp),
+            verticalArrangement = Arrangement.spacedBy(21.dp)
         ) {
             item {
+                WorkspaceMasthead(
+                    kicker = today,
+                    title = profile.teacherName.ifBlank { "صباح العمل" },
+                    caption = "لوحة إدارة يومك الدراسي",
+                    icon = EduGlyph.DASH,
+                    modifier = Modifier.statusBarsPadding()
+                )
+            }
+
+            item {
+                // The main screen is a daily workspace rather than a vertical stack of cards.
                 Column(
-                    Modifier.fillMaxWidth().background(Edu.Navy,RoundedCornerShape(bottomStart=30.dp,bottomEnd=30.dp))
-                        .padding(start=23.dp,end=23.dp,top=28.dp,bottom=26.dp),
-                    verticalArrangement=Arrangement.spacedBy(21.dp)
+                    Modifier.fillMaxWidth().padding(horizontal = 20.dp)
+                        .background(Edu.Navy, RoundedCornerShape(30.dp)).padding(22.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
-                    Row(verticalAlignment=Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("مساحة المعلم",color=Edu.Paper.copy(alpha=.7f),style=MaterialTheme.typography.bodyMedium)
-                            Text(profile.teacherName.ifBlank{"مرحبًا بك"},style=MaterialTheme.typography.headlineMedium,
-                                fontWeight=FontWeight.Bold,color=Edu.Paper)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("مركز العمل", color = Edu.Paper.copy(alpha = .78f),
+                                style = MaterialTheme.typography.labelLarge)
+                            Text("كل ما تحتاجه\nليوم دراسي منظم", color = Edu.Paper,
+                                style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
                         }
-                        Surface(shape=RoundedCornerShape(17.dp),color=Edu.Blue) {
-                            Glyph(EduGlyph.SPARK,Modifier.padding(12.dp),Edu.Paper)
+                        Glyph(EduGlyph.SPARK, Modifier.size(47.dp), Edu.Amber)
+                    }
+                    HorizontalDivider(color = Edu.Paper.copy(alpha = .18f))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        listOf(
+                            "منهج" to files.size,
+                            "طالب" to students.size,
+                            "إنجاز" to portfolio.size
+                        ).forEach { (label, value) ->
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                Text(value.toString(), style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Black, color = Edu.Paper)
+                                Text(label, style = MaterialTheme.typography.bodySmall,
+                                    color = Edu.Paper.copy(alpha = .8f))
+                            }
                         }
                     }
-                    Text("مركز إدارة يومك الدراسي",color=Edu.Paper,style=MaterialTheme.typography.titleMedium)
-                    Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                        listOf(Triple("المناهج",files.size, EduGlyph.BOOK),
-                            Triple("الطلاب",students.size,EduGlyph.GROUP),
-                            Triple("الإنجازات",portfolio.size,EduGlyph.FOLDER)).forEach { (label,value,icon)->
-                            Column(Modifier.weight(1f).background(Edu.Paper.copy(alpha=.10f),RoundedCornerShape(14.dp))
-                                .padding(13.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                                Glyph(icon,tint=Edu.Amber)
-                                Text("$value",fontWeight=FontWeight.Bold,color=Edu.Paper,
-                                    style=MaterialTheme.typography.titleLarge)
-                                Text(label,color=Edu.Paper.copy(alpha=.85f),style=MaterialTheme.typography.bodySmall)
-                            }
+                    Button(
+                        onClick = { onNavigate("exams") },
+                        modifier = Modifier.fillMaxWidth().height(55.dp),
+                        shape = RoundedCornerShape(17.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Edu.Amber)
+                    ) {
+                        Glyph(EduGlyph.EXAM, Modifier.size(22.dp), Edu.Navy)
+                        Spacer(Modifier.width(10.dp))
+                        Text("إنشاء اختبار جديد", color = Edu.Navy, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.weight(1f))
+                        Glyph(EduGlyph.ARROW, Modifier.size(19.dp), Edu.Navy)
+                    }
+                }
+            }
+
+            item {
+                Column(
+                    Modifier.padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SectionHeader("مسارات العمل", "افتح القسم الذي تريد العمل عليه")
+                    WorkspaceAction(
+                        title = "المكتبة التعليمية",
+                        caption = "تصفح الكتب وأنشئ وحداتك ودروسك",
+                        icon = EduGlyph.BOOK,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { onNavigate("curricula") }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(Modifier.weight(1f)) {
+                            WorkspaceAction(
+                                title = "الفصل",
+                                caption = "الحضور والدرجات",
+                                icon = EduGlyph.GROUP,
+                                modifier = Modifier.fillMaxWidth()
+                            ) { onNavigate("tools") }
+                        }
+                        Column(Modifier.weight(1f)) {
+                            WorkspaceAction(
+                                title = "إنجازاتي",
+                                caption = "الشهادات والشواهد",
+                                icon = EduGlyph.FOLDER,
+                                modifier = Modifier.fillMaxWidth()
+                            ) { onNavigate("portfolio") }
                         }
                     }
                 }
             }
+
             item {
-                Column(Modifier.padding(horizontal=20.dp),verticalArrangement=Arrangement.spacedBy(13.dp)) {
-                    SectionHeader("أنجز الآن","المهام الأكثر استخدامًا")
-                    Row(horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(13.dp)) {
+                    Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            ActionShortcut("المكتبة","أضف منهجك",EduGlyph.BOOK,Edu.Blue,Modifier.fillMaxWidth()) {
-                                onNavigate("curricula")
-                            }
+                            Text("رفّ الكتب", color = Edu.Navy, fontWeight = FontWeight.ExtraBold,
+                                style = MaterialTheme.typography.titleLarge)
+                            Text("آخر المناهج المحفوظة", color = Edu.Muted,
+                                style = MaterialTheme.typography.bodySmall)
                         }
-                        Column(Modifier.weight(1f)) {
-                            ActionShortcut("اختبار جديد","أنشئ وصدّر",EduGlyph.EXAM,Edu.Teal,Modifier.fillMaxWidth()) {
-                                onNavigate("exams")
-                            }
-                        }
+                        TextButton(onClick = { onNavigate("curricula") }) { Text("المكتبة ←") }
                     }
-                }
-            }
-            item {
-                Column(Modifier.padding(horizontal=20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-                    SectionHeader("آخر الملفات",action="عرض المكتبة",onAction={onNavigate("curricula")})
-                    if(files.isEmpty()) {
-                        AppCard(Modifier.fillMaxWidth()) {
-                            EmptyState("مكتبتك جاهزة","ابدأ بإضافة أول منهج",EduGlyph.BOOK,"إضافة منهج") {
-                                onNavigate("curricula")
-                            }
+                    if (files.isEmpty()) {
+                        Box(Modifier.padding(horizontal = 20.dp)) {
+                            WorkspaceAction("أضف أول كتاب", "احتفظ بمناهجك داخل الجهاز",
+                                EduGlyph.PLUS, Modifier.fillMaxWidth()) { onNavigate("curricula") }
                         }
                     } else {
-                        files.take(3).forEach { file ->
-                            FeatureCard(file.title,"ملف محفوظ للاستخدام دون إنترنت",EduGlyph.DOC,
-                                modifier=Modifier.fillMaxWidth(),accent=Edu.Teal) {
-                                onNavigate("curricula")
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 20.dp),
+                            horizontalArrangement = Arrangement.spacedBy(13.dp)
+                        ) {
+                            itemsIndexed(files.take(8), key = { _, item -> item.id }) { index, file ->
+                                LibraryBookCover(
+                                    title = file.title,
+                                    subtitle = "ملف PDF",
+                                    index = index,
+                                    modifier = Modifier.width(166.dp)
+                                ) { onNavigate("curricula") }
                             }
                         }
                     }
                 }
             }
-            item {
-                Column(Modifier.padding(horizontal=20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-                    SectionHeader("إدارة العمل")
-                    FeatureCard("ملف الإنجاز","شواهدك وتقاريرك المهنية",EduGlyph.FOLDER,
-                        Modifier.fillMaxWidth(),accent=Edu.Teal){onNavigate("portfolio")}
-                    FeatureCard("إدارة الفصل","الطلاب والحضور والدرجات",EduGlyph.GROUP,
-                        Modifier.fillMaxWidth(),accent=Edu.Blue){onNavigate("tools")}
-                }
-            }
-        }
-    }
-}
 
-@Composable
-private fun ActionShortcut(
-    title:String,subtitle:String,icon:EduGlyph,tint:androidx.compose.ui.graphics.Color,
-    modifier:Modifier=Modifier,onClick:()->Unit
-) {
-    Surface(onClick=onClick,modifier=modifier.height(149.dp),color=Edu.Paper,
-        shape=RoundedCornerShape(24.dp)) {
-        Column(Modifier.padding(17.dp),verticalArrangement=Arrangement.SpaceBetween) {
-            Surface(color=tint.copy(alpha=.10f),shape=RoundedCornerShape(13.dp)) {
-                Glyph(icon,Modifier.padding(9.dp).size(27.dp),tint)
-            }
-            Column {
-                Text(title,fontWeight=FontWeight.Bold,color=Edu.Navy,
-                    style=MaterialTheme.typography.titleMedium)
-                Text(subtitle,color=Edu.Muted,style=MaterialTheme.typography.bodySmall)
+            item {
+                Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SectionHeader("مساحتك المهنية", "سجل الشواهد والتطور المهني")
+                    WorkspaceAction("ملف الإنجاز المهني", "${portfolio.size} إنجاز محفوظ",
+                        EduGlyph.CHECK, Modifier.fillMaxWidth(), dark = true) {
+                        onNavigate("portfolio")
+                    }
+                }
             }
         }
     }

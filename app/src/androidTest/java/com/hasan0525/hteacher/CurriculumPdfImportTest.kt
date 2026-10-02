@@ -43,7 +43,7 @@ class CurriculumPdfImportTest {
                 )
             )
             compose.onAllNodesWithText("المكتبة").onFirst().performClick()
-            compose.onNodeWithText("إضافة كتاب أو منهج").performClick()
+            compose.onNodeWithText("إضافة PDF", useUnmergedTree = true).performClick()
             compose.waitUntil(10_000) {
                 compose.onAllNodesWithText("اسم مادة جديدة").fetchSemanticsNodes().isNotEmpty()
             }

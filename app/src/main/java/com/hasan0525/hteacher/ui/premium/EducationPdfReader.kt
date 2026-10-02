@@ -1,6 +1,5 @@
 package com.hasan0525.hteacher.ui.premium
 
-import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -15,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -23,89 +23,176 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.hasan0525.hteacher.data.pdf.PdfRendererEngine
 import com.hasan0525.hteacher.data.pdf.RenderedPdfPage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private sealed interface ReaderState {
-    data object Loading:ReaderState
-    data class Ready(val page:RenderedPdfPage):ReaderState
-    data class Error(val details:String):ReaderState
+    data object Loading : ReaderState
+    data class Ready(val page: RenderedPdfPage) : ReaderState
+    data class Error(val details: String) : ReaderState
 }
 
+private val ReaderInk = Color(0xFF141F30)
+private val ReaderPanel = Color(0xFF222F42)
+
 @Composable
-fun EducationPdfReader(filePath:String,title:String,onBack:()->Unit){
-    var pageIndex by rememberSaveable(filePath){mutableIntStateOf(0)}
-    var zoom by remember(filePath,pageIndex){mutableFloatStateOf(1f)}
-    var translation by remember(filePath,pageIndex){mutableStateOf(Offset.Zero)}
-    var pageInput by remember(filePath){mutableStateOf("")}
-    val pageState by produceState<ReaderState>(ReaderState.Loading,filePath,pageIndex){
-        value=ReaderState.Loading
-        value=try {
-            ReaderState.Ready(PdfRendererEngine.renderPage(filePath,pageIndex))
-        }catch(e:Exception){ReaderState.Error(e.message?:"تعذر فتح الملف")}
+fun EducationPdfReader(filePath: String, title: String, onBack: () -> Unit) {
+    var pageIndex by rememberSaveable(filePath) { mutableIntStateOf(0) }
+    var zoom by remember(filePath, pageIndex) { mutableFloatStateOf(1f) }
+    var translation by remember(filePath, pageIndex) { mutableStateOf(Offset.Zero) }
+    var pageInput by remember(filePath) { mutableStateOf("1") }
+    LaunchedEffect(pageIndex) { pageInput = (pageIndex + 1).toString() }
+
+    // File I/O and bitmap rendering are off the Compose UI thread.
+    val pageState by produceState<ReaderState>(ReaderState.Loading, filePath, pageIndex) {
+        value = ReaderState.Loading
+        value = try {
+            ReaderState.Ready(withContext(Dispatchers.IO) {
+                PdfRendererEngine.renderPage(filePath, pageIndex)
+            })
+        } catch (error: Exception) {
+            ReaderState.Error(error.message ?: "تعذر قراءة هذه الصفحة")
+        }
     }
-    val rendered=(pageState as? ReaderState.Ready)?.page
-    DisposableEffect(rendered?.bitmap) {
-        val old=rendered?.bitmap
-        onDispose { if(old!=null&&!old.isRecycled)old.recycle() }
+    val page = (pageState as? ReaderState.Ready)?.page
+    DisposableEffect(page?.bitmap) {
+        val bitmap = page?.bitmap
+        onDispose { if (bitmap != null && !bitmap.isRecycled) bitmap.recycle() }
     }
-    Scaffold(containerColor=Edu.Canvas,
-        topBar={AppTopBar(title.ifBlank{"قراءة المنهج"},"قارئ PDF",onBack,
-            action={TextButton(onClick={zoom=1f;translation=Offset.Zero}){Text("احتواء",color=Edu.Blue)}})},
-        bottomBar={
-            if(rendered!=null){
-                Column(Modifier.fillMaxWidth().background(Edu.Paper).navigationBarsPadding()
-                    .padding(horizontal=18.dp,vertical=10.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
-                    Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(9.dp)) {
-                        SecondaryButton("السابق",Modifier.weight(1f),enabled=rendered.pageIndex>0){
-                            pageIndex=rendered.pageIndex-1
-                        }
-                        Text("${rendered.pageIndex+1} / ${rendered.pageCount}",
-                            color=Edu.Navy,fontWeight=FontWeight.Bold)
-                        SecondaryButton("التالي",Modifier.weight(1f),
-                            enabled=rendered.pageIndex<rendered.pageCount-1){pageIndex=rendered.pageIndex+1}
+
+    Scaffold(
+        containerColor = ReaderInk,
+        topBar = {
+            Row(
+                Modifier.fillMaxWidth().background(ReaderPanel)
+                    .statusBarsPadding().padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(onClick = onBack) {
+                    Glyph(EduGlyph.BACK, Modifier.size(22.dp), Color.White)
+                    Spacer(Modifier.width(7.dp))
+                    Text("المكتبة", color = Color.White)
+                }
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(title.ifBlank { "قراءة المنهج" }, color = Color.White,
+                        maxLines = 1, fontWeight = FontWeight.Bold)
+                    Text("وضع القراءة", color = Color.White.copy(alpha = .64f),
+                        style = MaterialTheme.typography.labelSmall)
+                }
+                TextButton(onClick = { zoom = 1f; translation = Offset.Zero }) {
+                    Text("احتواء", color = Color.White)
+                }
+            }
+        },
+        bottomBar = {
+            if (page != null) {
+                Column(
+                    Modifier.fillMaxWidth().background(ReaderPanel)
+                        .navigationBarsPadding().padding(horizontal = 17.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    if (page.pageCount > 1) {
+                        Slider(
+                            value = page.pageIndex.toFloat(),
+                            onValueChange = { pageIndex = it.toInt().coerceIn(0, page.pageCount - 1) },
+                            valueRange = 0f..(page.pageCount - 1).toFloat(),
+                            colors = SliderDefaults.colors(
+                                thumbColor = Edu.Amber,
+                                activeTrackColor = Edu.Amber,
+                                inactiveTrackColor = Color.White.copy(alpha = .25f)
+                            ),
+                            modifier = Modifier.fillMaxWidth().height(22.dp)
+                        )
                     }
-                    if(rendered.pageCount>1) Slider(
-                        value=rendered.pageIndex.toFloat(),
-                        onValueChange={pageIndex=it.toInt().coerceIn(0,rendered.pageCount-1)},
-                        valueRange=0f..(rendered.pageCount-1).toFloat(),
-                        colors=SliderDefaults.colors(thumbColor=Edu.Blue,activeTrackColor=Edu.Blue))
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { pageIndex = (pageIndex - 1).coerceAtLeast(0) },
+                            enabled = page.pageIndex > 0,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(13.dp)
+                        ) { Text("السابق", color = Color.White) }
+                        OutlinedTextField(
+                            value = pageInput,
+                            onValueChange = { pageInput = it.filter(Char::isDigit).take(4) },
+                            modifier = Modifier.width(65.dp).height(54.dp),
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.titleSmall.copy(color = Color.White),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Edu.Amber,
+                                unfocusedBorderColor = Color.White.copy(alpha = .5f)
+                            )
+                        )
+                        TextButton(onClick = {
+                            pageInput.toIntOrNull()?.let {
+                                pageIndex = (it - 1).coerceIn(0, page.pageCount - 1)
+                            }
+                        }) { Text("/ ${page.pageCount}", color = Color.White) }
+                        OutlinedButton(
+                            onClick = { pageIndex = (pageIndex + 1).coerceAtMost(page.pageCount - 1) },
+                            enabled = page.pageIndex < page.pageCount - 1,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(13.dp)
+                        ) { Text("التالي", color = Color.White) }
+                    }
                 }
             }
         }
-    ){pad->
-        when(val result=pageState){
-            ReaderState.Loading->Box(Modifier.fillMaxSize().padding(pad),contentAlignment=Alignment.Center){
-                LoadingView("جارٍ تجهيز الصفحة")
+    ) { padding ->
+        when (val state = pageState) {
+            ReaderState.Loading -> Box(
+                Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Edu.Amber)
             }
-            is ReaderState.Error->Box(Modifier.fillMaxSize().padding(pad),contentAlignment=Alignment.Center){
-                EmptyState("تعذر فتح الملف",result.details,EduGlyph.PDF,"رجوع"){onBack()}
+            is ReaderState.Error -> Box(
+                Modifier.fillMaxSize().padding(padding).background(Edu.Canvas),
+                contentAlignment = Alignment.Center
+            ) {
+                EmptyState("تعذر فتح الكتاب", state.details, EduGlyph.PDF, "العودة") { onBack() }
             }
-            is ReaderState.Ready->{
-                Column(Modifier.fillMaxSize().padding(pad),
-                    verticalArrangement=Arrangement.spacedBy(7.dp),
-                    horizontalAlignment=Alignment.CenterHorizontally) {
-                    Row(Modifier.fillMaxWidth().padding(horizontal=18.dp),verticalAlignment=Alignment.CenterVertically){
-                        Text("اسحب للتنقل بين صفحات الكتاب",color=Edu.Muted,
-                            style=MaterialTheme.typography.bodySmall,modifier=Modifier.weight(1f))
-                        Text("تكبير ${(zoom*100).toInt()}%",color=Edu.Blue,
-                            style=MaterialTheme.typography.bodySmall)
+            is ReaderState.Ready -> {
+                Column(Modifier.fillMaxSize().padding(padding),
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("صفحة ${state.page.pageIndex + 1} من ${state.page.pageCount}",
+                            Modifier.weight(1f), color = Color.White.copy(alpha = .8f),
+                            style = MaterialTheme.typography.bodySmall)
+                        Text("${(zoom * 100).toInt()}%",
+                            color = Edu.Amber, style = MaterialTheme.typography.bodySmall)
                     }
-                    Box(Modifier.fillMaxWidth().weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Edu.Canvas)
-                        .verticalScroll(rememberScrollState())
-                        .pointerInput(pageIndex){
-                            detectTransformGestures { _,pan,magnification,_ ->
-                                val updated=(zoom*magnification).coerceIn(1f,3.5f)
-                                zoom=updated
-                                translation=if(updated<=1f)Offset.Zero else translation+pan
-                            }
-                        },contentAlignment=Alignment.TopCenter) {
+                    Box(
+                        Modifier.fillMaxWidth().weight(1f).padding(horizontal = 13.dp)
+                            .clip(RoundedCornerShape(topStart = 15.dp, topEnd = 15.dp))
+                            .background(Color(0xFF303B4B))
+                            .verticalScroll(rememberScrollState())
+                            .pointerInput(pageIndex) {
+                                detectTransformGestures { _, pan, scale, _ ->
+                                    val newZoom = (zoom * scale).coerceIn(1f, 4f)
+                                    zoom = newZoom
+                                    translation = if (newZoom <= 1f) Offset.Zero else translation + pan
+                                }
+                            },
+                        contentAlignment = Alignment.TopCenter
+                    ) {
                         Image(
-                            bitmap=result.page.bitmap.asImageBitmap(),
-                            contentDescription="صفحة ${result.page.pageIndex+1}",
-                            modifier=Modifier.fillMaxWidth().padding(horizontal=8.dp)
-                                .graphicsLayer(scaleX=zoom,scaleY=zoom,translationX=translation.x,translationY=translation.y),
-                            contentScale=ContentScale.FillWidth
+                            bitmap = state.page.bitmap.asImageBitmap(),
+                            contentDescription = "صفحة ${state.page.pageIndex + 1}",
+                            modifier = Modifier.widthIn(max = 820.dp)
+                                .fillMaxWidth().padding(8.dp)
+                                .background(Color.White)
+                                .graphicsLayer(
+                                    scaleX = zoom, scaleY = zoom,
+                                    translationX = translation.x, translationY = translation.y
+                                ),
+                            contentScale = ContentScale.FillWidth
                         )
                     }
                 }

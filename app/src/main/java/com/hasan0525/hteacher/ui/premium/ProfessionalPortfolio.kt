@@ -58,31 +58,38 @@ fun ProfessionalPortfolio(onBack:()->Unit,onNavigate:(String)->Unit) {
             contentPadding=PaddingValues(horizontal=19.dp,vertical=18.dp),
             verticalArrangement=Arrangement.spacedBy(17.dp)){
             item {
-                Column(Modifier.fillMaxWidth().background(Edu.Navy,RoundedCornerShape(26.dp))
-                    .padding(21.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
-                    Row(verticalAlignment=Alignment.CenterVertically,
-                        horizontalArrangement=Arrangement.spacedBy(14.dp)) {
-                        Box(Modifier.size(65.dp).background(Edu.Blue,RoundedCornerShape(18.dp)),
-                            contentAlignment=Alignment.Center){
-                            Glyph(EduGlyph.SPARK,Modifier.size(33.dp),Edu.Paper)
-                        }
-                        Column(Modifier.weight(1f)) {
-                            Text(state.profile.teacherName.ifBlank{"ملف المعلم"},
-                                style=MaterialTheme.typography.titleLarge,
-                                fontWeight=FontWeight.Bold,color=Edu.Paper)
-                            Text(state.profile.jobTitle.ifBlank{"سجلك المهني"},
-                                color=Edu.Paper.copy(alpha=.8f))
-                            Text(state.profile.schoolName,color=Edu.Paper.copy(alpha=.75f),
-                                style=MaterialTheme.typography.bodySmall)
-                        }
+                WorkspaceMasthead(
+                    kicker = "PROFESSIONAL JOURNAL",
+                    title = state.profile.teacherName.ifBlank { "ملف الإنجاز" },
+                    caption = state.profile.jobTitle.ifBlank { "سجلك المهني والشواهد" },
+                    icon = EduGlyph.FOLDER,
+                    onIconClick = { profileEditor = true }
+                )
+            }
+            item {
+                Row(
+                    Modifier.fillMaxWidth().background(Edu.Paper,RoundedCornerShape(22.dp))
+                        .padding(18.dp),
+                    horizontalArrangement=Arrangement.spacedBy(14.dp),
+                    verticalAlignment=Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                        Text("ملفك المهني",color=Edu.Teal,style=MaterialTheme.typography.labelLarge)
+                        Text(state.profile.schoolName.ifBlank { "سجّل مدرستك" },
+                            color=Edu.Navy,style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.ExtraBold)
+                        Text(state.profile.specialization.ifBlank { "الشهادات، الشواهد، والدورات في مكان واحد" },
+                            color=Edu.Muted,style=MaterialTheme.typography.bodySmall)
+                        TextButton(onClick={profileEditor=true}){Text("تعديل الملف الشخصي")}
                     }
-                    HorizontalDivider(color=Edu.Paper.copy(alpha=.18f))
-                    Row(horizontalArrangement=Arrangement.spacedBy(24.dp)) {
-                        Text("${state.allItems.size} إنجاز",color=Edu.Paper,fontWeight=FontWeight.Bold)
-                        Text("${state.allItems.sumOf{it.attachments.size}} مرفق",color=Edu.Amber,
-                            fontWeight=FontWeight.Bold)
+                    Column(horizontalAlignment=Alignment.CenterHorizontally) {
+                        Text("${state.allItems.size}",color=Edu.Navy,
+                            style=MaterialTheme.typography.headlineLarge,fontWeight=FontWeight.Black)
+                        Text("إنجاز",color=Edu.Muted)
+                        HorizontalDivider(Modifier.width(68.dp).padding(vertical=8.dp),color=Edu.Line)
+                        Text("${state.allItems.sumOf { it.attachments.size }}",
+                            color=Edu.Teal,style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
+                        Text("مرفق",color=Edu.Muted)
                     }
-                    SecondaryButton("تعديل بياناتي",Modifier.fillMaxWidth()){profileEditor=true}
                 }
             }
             item {
@@ -103,21 +110,20 @@ fun ProfessionalPortfolio(onBack:()->Unit,onNavigate:(String)->Unit) {
                     }
                 }
             }
-            item { SectionHeader("سجل إنجازاتك") }
+            item { SectionHeader("الخط الزمني", "الإنجازات والشواهد مرتبة من الأحدث") }
             if(state.items.isEmpty()) item {
                 EmptyState("أضف إنجازك الأول","ارفق شهاداتك وشواهدك في مساحة منظمة",
                     EduGlyph.FOLDER,"إضافة إنجاز"){add=true}
             } else items(state.items,key={it.item.id}){entry->
-                AppCard(Modifier.fillMaxWidth()) {
-                    Row(verticalAlignment=Alignment.CenterVertically) {
-                        Box(Modifier.size(45.dp).background(Edu.Mint,RoundedCornerShape(14.dp)),
-                            contentAlignment=Alignment.Center){Glyph(EduGlyph.CHECK,tint=Edu.Teal)}
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(entry.item.title,color=Edu.Navy,fontWeight=FontWeight.Bold)
-                            Text(PortfolioCategory.fromStorage(entry.item.category).label,color=Edu.Teal,
-                                style=MaterialTheme.typography.bodySmall)
-                        }
+                TimelineEntry(
+                    heading=entry.item.title,
+                    subtitle=PortfolioCategory.fromStorage(entry.item.category).label,
+                    modifier=Modifier.fillMaxWidth(),
+                    last=false
+                ) {
+                    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                        Text("إنجاز محفوظ",Modifier.weight(1f),color=Edu.Muted,
+                            style=MaterialTheme.typography.labelSmall)
                         TextButton(onClick={editing=entry}){Text("تعديل")}
                     }
                     if(entry.item.description.isNotBlank()) Text(entry.item.description,color=Edu.Muted)

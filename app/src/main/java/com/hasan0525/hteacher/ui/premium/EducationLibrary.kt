@@ -31,6 +31,7 @@ import com.hasan0525.hteacher.data.local.entity.CurriculumUnitEntity
 import com.hasan0525.hteacher.ui.curriculum.CurriculumViewModel
 import com.hasan0525.hteacher.ui.curriculum.CurriculumViewModelFactory
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EducationLibrary(onBack:()->Unit,onNavigate:(String)->Unit,onOpenPdf:(String,String)->Unit) {
     val context=LocalContext.current
@@ -72,125 +73,219 @@ fun EducationLibrary(onBack:()->Unit,onNavigate:(String)->Unit,onOpenPdf:(String
     LaunchedEffect(state.message) {
         state.message?.let{snackbar.showSnackbar(it);vm.clearMessage()}
     }
+    val displayed = state.curricula.filter { it.title.contains(search, ignoreCase = true) }
+
     Scaffold(
-        containerColor=Edu.Canvas,
-        topBar={AppTopBar("مكتبة المناهج","ملفاتك ووحداتك الدراسية",onBack,
-            action={
-                TextButton(onClick={addSubject=true}){Glyph(EduGlyph.PLUS,Modifier.size(18.dp));Text("مادة")}
-            })},
-        bottomBar={EducationBottomNav("curricula",onNavigate)},
-        snackbarHost={SnackbarHost(snackbar)}
-    ){padding->
-        LazyColumn(Modifier.fillMaxSize().padding(padding),
-            contentPadding=PaddingValues(start=19.dp,end=19.dp,top=14.dp,bottom=35.dp),
-            verticalArrangement=Arrangement.spacedBy(18.dp)){
+        containerColor = Edu.Canvas,
+        topBar = { AppTopBar("مكتبة المناهج", "مكتبتك التعليمية الخاصة", onBack,
+            action = { TextButton(onClick = { addSubject = true }) { Text("+ مادة") } }) },
+        bottomBar = { EducationBottomNav("curricula", onNavigate) },
+        snackbarHost = { SnackbarHost(snackbar) },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { if (!state.isImporting) picker.launch(arrayOf("application/pdf")) },
+                containerColor = Edu.Navy,
+                contentColor = Edu.Paper,
+                shape = RoundedCornerShape(21.dp),
+                icon = { Glyph(EduGlyph.PLUS, Modifier.size(23.dp), Edu.Paper) },
+                text = { Text(if (state.isImporting) "جارٍ الحفظ" else "إضافة PDF", fontWeight = FontWeight.Bold) }
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(bottom = 108.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             item {
+                WorkspaceMasthead(
+                    kicker = "LIBRARY / المعلم H",
+                    title = "رفّ المناهج",
+                    caption = "${state.curricula.size} كتاب في المجموعة المحددة",
+                    icon = EduGlyph.BOOK,
+                    onIconClick = { if (!state.isImporting) picker.launch(arrayOf("application/pdf")) }
+                )
+            }
+            item {
+                Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = search,
+                        onValueChange = { search = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        placeholder = { Text("ابحث باسم الكتاب...") },
+                        leadingIcon = { Glyph(EduGlyph.SEARCH, Modifier.size(21.dp), Edu.Muted) },
+                        shape = RoundedCornerShape(19.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = Edu.Paper, focusedContainerColor = Edu.Paper,
+                            focusedBorderColor = Edu.Teal, unfocusedBorderColor = Edu.Line
+                        )
+                    )
+                    if (state.isImporting) LinearProgressIndicator(Modifier.fillMaxWidth(), color = Edu.Teal)
+                }
+            }
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("المواد", color = Edu.Navy, fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                        TextButton(onClick = { addSubject = true }) { Text("إضافة مادة") }
+                        state.subjects.firstOrNull { it.id == state.selectedSubjectId }?.let { selected ->
+                            TextButton(onClick = { manageSubject = selected.id }) { Text("إدارة") }
+                        }
+                    }
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(state.subjects, key = { it.id }) { subject ->
+                            FilterChipPill(subject.name, subject.id == state.selectedSubjectId) {
+                                vm.selectSubject(subject.id)
+                            }
+                        }
+                        item { FilterChipPill("+", false) { addSubject = true } }
+                    }
+                }
+            }
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("الصفوف", color = Edu.Navy, fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                        TextButton(onClick = { addGrade = true }) { Text("إضافة صف") }
+                        state.grades.firstOrNull { it.id == state.selectedGradeId }?.let { selected ->
+                            TextButton(onClick = { manageGrade = selected.id }) { Text("إدارة") }
+                        }
+                    }
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(state.grades, key = { it.id }) { grade ->
+                            FilterChipPill(grade.name, grade.id == state.selectedGradeId) {
+                                vm.selectGrade(grade.id)
+                            }
+                        }
+                        item { FilterChipPill("+", false) { addGrade = true } }
+                    }
+                }
+            }
+            item {
+                Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("أغلفة الكتب", color = Edu.Navy, fontWeight = FontWeight.ExtraBold,
+                        style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    Text("${displayed.size} ملف", color = Edu.Muted, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            if (displayed.isEmpty()) {
+                item {
+                    Column(Modifier.padding(horizontal = 20.dp).fillMaxWidth().background(Edu.Paper,
+                        RoundedCornerShape(25.dp))) {
+                        EmptyState(
+                            "لا توجد كتب",
+                            "اختر مادة وصفًا أو أضف كتاب PDF",
+                            EduGlyph.BOOK,
+                            "اختيار PDF"
+                        ) { picker.launch(arrayOf("application/pdf")) }
+                    }
+                }
+            } else {
+                items(displayed.chunked(2)) { pair ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(13.dp)
+                    ) {
+                        pair.forEach { course ->
+                            LibraryBookCover(
+                                title = course.title,
+                                subtitle = "افتح صفحة الكتاب",
+                                index = displayed.indexOfFirst { it.id == course.id },
+                                modifier = Modifier.weight(1f)
+                            ) { openCourse = course.id }
+                        }
+                        if (pair.size == 1) Spacer(Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+
+    // Course details are a separate surface, rather than nesting another stack in every library item.
+    openCourse?.let { id ->
+        state.curricula.firstOrNull { it.id == id }?.let { course ->
+            ModalBottomSheet(
+                onDismissRequest = { openCourse = null },
+                containerColor = Edu.Canvas,
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            ) {
                 Column(
-                    Modifier.fillMaxWidth().background(Edu.Navy,RoundedCornerShape(24.dp)).padding(21.dp),
-                    verticalArrangement=Arrangement.spacedBy(12.dp)) {
-                    Row(verticalAlignment=Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("كل ملفاتك، في مكان واحد",color=Edu.Paper,
-                                style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
-                            Text("احفظها واقرأها دون إنترنت",color=Edu.Paper.copy(alpha=.78f))
+                    Modifier.fillMaxWidth().navigationBarsPadding()
+                        .heightIn(max = 680.dp).verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(15.dp)
+                ) {
+                    Text("الكتاب الحالي", color = Edu.Teal, style = MaterialTheme.typography.labelLarge)
+                    Text(course.title, color = Edu.Navy,
+                        style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
+                    PrimaryButton(
+                        "فتح قارئ الكتاب",
+                        Modifier.fillMaxWidth(),
+                        enabled = !course.localFileUri.isNullOrBlank(),
+                        icon = EduGlyph.PDF
+                    ) { course.localFileUri?.let { openCourse = null; onOpenPdf(it, course.title) } }
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        SecondaryButton("تعديل الاسم", Modifier.weight(1f)) {
+                            renameCourse = course; openCourse = null
                         }
-                        Glyph(EduGlyph.BOOK,Modifier.size(39.dp),Edu.Amber)
-                    }
-                    PrimaryButton("إضافة كتاب أو منهج",Modifier.fillMaxWidth(),
-                        enabled=!state.isImporting,icon=EduGlyph.PLUS){
-                        picker.launch(arrayOf("application/pdf"))
-                    }
-                    if(state.isImporting) LinearProgressIndicator(Modifier.fillMaxWidth())
-                }
-            }
-            item {
-                FormField("ابحث في المكتبة",search,{search=it},Modifier.fillMaxWidth())
-            }
-            item { SectionHeader("تصفية حسب المادة",action="+ مادة",onAction={addSubject=true}) }
-            item {
-                LazyRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                    items(state.subjects,key={it.id}){ subject ->
-                        FilterChipPill(subject.name,state.selectedSubjectId==subject.id){vm.selectSubject(subject.id)}
-                    }
-                    item { FilterChipPill("+ مادة",false){addSubject=true} }
-                }
-            }
-            item { SectionHeader("اختر الصف",action="+ صف",onAction={addGrade=true}) }
-            item {
-                LazyRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                    items(state.grades,key={it.id}){ grade ->
-                        FilterChipPill(grade.name,state.selectedGradeId==grade.id){vm.selectGrade(grade.id)}
-                    }
-                    item { FilterChipPill("+ صف",false){addGrade=true} }
-                }
-            }
-            item {
-                val subject=state.subjects.firstOrNull{it.id==state.selectedSubjectId}
-                val grade=state.grades.firstOrNull{it.id==state.selectedGradeId}
-                Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                    if(subject!=null) TextButton(onClick={manageSubject=subject.id}){Text("إدارة المادة",color=Edu.Muted)}
-                    if(grade!=null)TextButton(onClick={manageGrade=grade.id}){Text("إدارة الصف",color=Edu.Muted)}
-                }
-            }
-            item { SectionHeader("الكتب المحفوظة","اضغط على كتاب لعرض الوحدات") }
-            val visible=state.curricula.filter{it.title.contains(search,true)}
-            if(visible.isEmpty()) item {
-                EmptyState("لا توجد كتب مطابقة","أضف كتابًا أو اختر مادة وصفًا مختلفين",
-                    EduGlyph.BOOK,action="اختيار PDF"){picker.launch(arrayOf("application/pdf"))}
-            } else items(visible,key={it.id}){course->
-                val expanded=openCourse==course.id
-                AppCard(Modifier.fillMaxWidth()) {
-                    Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                        Box(Modifier.size(51.dp).background(Edu.BlueSoft,RoundedCornerShape(16.dp)),contentAlignment=Alignment.Center){
-                            Glyph(EduGlyph.DOC,tint=Edu.Blue)
-                        }
-                        Column(Modifier.weight(1f)) {
-                            Text(course.title,color=Edu.Navy,fontWeight=FontWeight.Bold,maxLines=2,
-                                overflow=TextOverflow.Ellipsis)
-                            Text("متاح دون اتصال",color=Edu.Muted,style=MaterialTheme.typography.bodySmall)
-                        }
-                        IconButton(onClick={openCourse=if(expanded)null else course.id}) {
-                            Glyph(EduGlyph.MORE,tint=Edu.Blue)
+                        SecondaryButton("حذف الكتاب", Modifier.weight(1f)) {
+                            deleteCourse = course; openCourse = null
                         }
                     }
-                    Row(horizontalArrangement=Arrangement.spacedBy(7.dp)) {
-                        PrimaryButton("قراءة",Modifier.weight(1f),icon=EduGlyph.BOOK,
-                            enabled=!course.localFileUri.isNullOrBlank()) {
-                            course.localFileUri?.let{onOpenPdf(it,course.title)}
-                        }
-                        SecondaryButton(if(expanded)"إغلاق" else "الوحدات",Modifier.weight(1f)){
-                            openCourse=if(expanded)null else course.id
-                        }
+                    HorizontalDivider(color = Edu.Line)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("الوحدات والدروس", color = Edu.Navy,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        TextButton(onClick = { addUnit = course.id; openCourse = null }) { Text("+ وحدة") }
                     }
-                    if(expanded) {
-                        HorizontalDivider(color=Edu.Line)
-                        Row(verticalAlignment=Alignment.CenterVertically) {
-                            Text("الوحدات والدروس",Modifier.weight(1f),color=Edu.Navy,fontWeight=FontWeight.Bold)
-                            TextButton(onClick={addUnit=course.id}){Text("+ وحدة")}
-                            TextButton(onClick={renameCourse=course}){Text("تعديل")}
-                            TextButton(onClick={deleteCourse=course}){Text("حذف",color=Edu.Error)}
-                        }
-                        val units=state.units.filter{it.curriculumId==course.id}
-                        if(units.isEmpty()) Text("لا توجد وحدات بعد",color=Edu.Muted)
-                        units.forEach{unit->
-                            Column(Modifier.fillMaxWidth().background(Edu.Canvas,RoundedCornerShape(15.dp)).padding(12.dp),
-                                verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                                Text(unit.title,color=Edu.Navy,fontWeight=FontWeight.Bold)
-                                Row {
-                                    TextButton(onClick={addLesson=unit.id}){Text("+ درس")}
-                                    TextButton(onClick={renameUnit=unit}){Text("تعديل الوحدة")}
-                                    TextButton(onClick={deleteUnit=unit}){Text("حذف",color=Edu.Error)}
+                    val units = state.units.filter { it.curriculumId == course.id }
+                    if (units.isEmpty()) {
+                        EmptyState("لم تُضف وحدات", "أنشئ وحدة لتنظيم محتوى هذا الكتاب", EduGlyph.FOLDER)
+                    }
+                    units.forEachIndexed { index, unit ->
+                        Column(
+                            Modifier.fillMaxWidth().background(Edu.Paper, RoundedCornerShape(20.dp))
+                                .padding(15.dp),
+                            verticalArrangement = Arrangement.spacedBy(7.dp)
+                        ) {
+                            Text("الوحدة ${index + 1}", color = Edu.Teal,
+                                style = MaterialTheme.typography.labelMedium)
+                            Text(unit.title, color = Edu.Navy,
+                                fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                            Row {
+                                TextButton(onClick = { addLesson = unit.id; openCourse = null }) { Text("+ درس") }
+                                TextButton(onClick = { renameUnit = unit; openCourse = null }) { Text("تعديل") }
+                                TextButton(onClick = { deleteUnit = unit; openCourse = null }) {
+                                    Text("حذف", color = Edu.Error)
                                 }
-                                state.lessons.filter{it.unitId==unit.id}.forEach{ lesson ->
-                                    Row(verticalAlignment=Alignment.CenterVertically) {
-                                        Text("• "+lesson.title,Modifier.weight(1f),color=Edu.Muted)
-                                        TextButton(onClick={renameLesson=lesson}){Text("تعديل")}
-                                        TextButton(onClick={deleteLesson=lesson}){Text("حذف",color=Edu.Error)}
+                            }
+                            state.lessons.filter { it.unitId == unit.id }.forEach { lesson ->
+                                HorizontalDivider(color = Edu.Line)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Glyph(EduGlyph.DOC, Modifier.size(19.dp), Edu.Teal)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(lesson.title, Modifier.weight(1f), color = Edu.Navy)
+                                    TextButton(onClick = { renameLesson = lesson; openCourse = null }) {
+                                        Text("تعديل")
+                                    }
+                                    TextButton(onClick = { deleteLesson = lesson; openCourse = null }) {
+                                        Text("حذف", color = Edu.Error)
                                     }
                                 }
                             }
                         }
                     }
+                    Spacer(Modifier.height(20.dp))
                 }
             }
         }

@@ -52,21 +52,21 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
             contentPadding=PaddingValues(horizontal=19.dp,vertical=18.dp),
             verticalArrangement=Arrangement.spacedBy(17.dp)){
             item {
-                Column(Modifier.fillMaxWidth().background(Edu.Navy,RoundedCornerShape(24.dp)).padding(20.dp),
-                    verticalArrangement=Arrangement.spacedBy(13.dp)){
-                    Text("صمّم اختبارًا في دقائق",color=Edu.Paper,style=MaterialTheme.typography.titleLarge,
-                        fontWeight=FontWeight.Bold)
-                    Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
-                        listOf("١. المصدر","٢. الإعداد","٣. النتيجة").forEachIndexed{index,text->
-                            Surface(onClick={step=index},shape=RoundedCornerShape(14.dp),
-                                color=if(step==index) Edu.Amber else Edu.Paper.copy(alpha=.13f)){
-                                Text(text,Modifier.padding(horizontal=12.dp,vertical=9.dp),
-                                    color=if(step==index)Edu.Navy else Edu.Paper,
-                                    style=MaterialTheme.typography.bodySmall,fontWeight=FontWeight.Bold)
-                            }
-                        }
+                WorkspaceMasthead(
+                    kicker = "ASSESSMENT STUDIO",
+                    title = "محرر الاختبارات",
+                    caption = "محرر من المحتوى إلى نموذج الطباعة",
+                    icon = EduGlyph.EXAM
+                )
+            }
+            item {
+                WorkflowSteps(
+                    current = step,
+                    titles = listOf("المصدر", "التصميم", "المعاينة"),
+                    onSelect = { selected ->
+                        if (selected < 2 || state.generatedExam != null) step = selected
                     }
-                }
+                )
             }
             when(step) {
                 0 -> {
@@ -166,31 +166,53 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                         }
                     } else {
                         item {
-                            Column(Modifier.fillMaxWidth().background(Edu.Navy,RoundedCornerShape(22.dp))
-                                .padding(20.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
-                                Text(exam.title,style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold,
-                                    color=Edu.Paper)
-                                Row {
-                                    Text("${exam.questions.size} سؤال",color=Edu.Paper,modifier=Modifier.weight(1f))
-                                    Text("${exam.totalMarks} درجة",color=Edu.Amber)
-                                }
-                                Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                                    PrimaryButton("الاختبار PDF",Modifier.weight(1f),
+                            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(9.dp)){
+                                    PrimaryButton("ورقة الاختبار",Modifier.weight(1f),
                                         enabled=!state.isExporting,icon=EduGlyph.PDF){
                                         questionsPicker.launch(exam.title+"-الاختبار.pdf")
                                     }
-                                    SecondaryButton("نموذج الإجابة",Modifier.weight(1f),enabled=!state.isExporting){
+                                    SecondaryButton("نموذج الإجابة",Modifier.weight(1f),
+                                        enabled=!state.isExporting){
                                         answersPicker.launch(exam.title+"-الإجابة.pdf")
                                     }
                                 }
-                            }
-                        }
-                        items(exam.questions,key={it.number}){q->
-                            AppCard {
-                                Text("سؤال ${q.number} • ${q.type.label}",color=Edu.Blue,
-                                    style=MaterialTheme.typography.labelMedium,fontWeight=FontWeight.Bold)
-                                Text(q.questionText,color=Edu.Navy,fontWeight=FontWeight.Bold)
-                                Text("${q.mark} درجة",color=Edu.Muted)
+                                // Real paper preview instead of unrelated question cards.
+                                Column(
+                                    Modifier.fillMaxWidth().background(Edu.Paper,RoundedCornerShape(9.dp))
+                                        .padding(horizontal=22.dp,vertical=26.dp),
+                                    verticalArrangement=Arrangement.spacedBy(16.dp)
+                                ) {
+                                    Text("وزارة التعليم  •  ورقة اختبار",color=Edu.Muted,
+                                        style=MaterialTheme.typography.labelSmall)
+                                    HorizontalDivider(color=Edu.Navy)
+                                    Text(exam.title,color=Edu.Navy,
+                                        style=MaterialTheme.typography.titleLarge,
+                                        fontWeight=FontWeight.ExtraBold)
+                                    Row(verticalAlignment=Alignment.CenterVertically) {
+                                        Text("الاسم: ................................",Modifier.weight(1f),
+                                            color=Edu.Navy,style=MaterialTheme.typography.bodyMedium)
+                                        Text("الدرجة: ${exam.totalMarks}",color=Edu.Navy,
+                                            style=MaterialTheme.typography.bodyMedium)
+                                    }
+                                    HorizontalDivider(color=Edu.Line)
+                                    exam.questions.forEach { q ->
+                                        Column(verticalArrangement=Arrangement.spacedBy(7.dp)) {
+                                            Row(verticalAlignment=Alignment.Top) {
+                                                Text("${q.number}. ",color=Edu.Blue,fontWeight=FontWeight.Bold)
+                                                Text(q.questionText,Modifier.weight(1f),
+                                                    color=Edu.Navy,fontWeight=FontWeight.SemiBold)
+                                                Text("(${q.mark})",color=Edu.Muted)
+                                            }
+                                            Text(q.type.label,color=Edu.Muted,
+                                                style=MaterialTheme.typography.labelSmall)
+                                            HorizontalDivider(color=Edu.Line)
+                                        }
+                                    }
+                                    Text("نهاية الأسئلة",color=Edu.Muted,
+                                        style=MaterialTheme.typography.labelMedium,
+                                        modifier=Modifier.align(Alignment.CenterHorizontally))
+                                }
                             }
                         }
                     }

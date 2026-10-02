@@ -5,9 +5,9 @@ import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
 val TeacherShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(18.dp),
-    large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(30.dp)
+    extraSmall = RoundedCornerShape(7.dp),
+    small = RoundedCornerShape(11.dp),
+    medium = RoundedCornerShape(17.dp),
+    large = RoundedCornerShape(23.dp),
+    extraLarge = RoundedCornerShape(31.dp)
 )
