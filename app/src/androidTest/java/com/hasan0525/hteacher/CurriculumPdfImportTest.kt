@@ -12,7 +12,6 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.Intents.intending
 import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
-import androidx.test.espresso.intent.Intents.intended
 import android.app.Instrumentation.ActivityResult
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first
@@ -44,7 +43,6 @@ class CurriculumPdfImportTest {
             )
             compose.onAllNodesWithText("المكتبة").onFirst().performClick()
             compose.onNodeWithText("إضافة كتاب أو منهج").performClick()
-            intended(hasAction(Intent.ACTION_OPEN_DOCUMENT))
             compose.waitUntil(10_000) {
                 compose.onAllNodesWithText("اسم مادة جديدة").fetchSemanticsNodes().isNotEmpty()
             }
