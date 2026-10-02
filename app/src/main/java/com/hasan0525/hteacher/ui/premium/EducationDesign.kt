@@ -167,19 +167,20 @@ fun StatCard(title: String, value: String, icon: EduGlyph,
 fun EmptyState(title: String, subtitle: String, icon: EduGlyph,
                action: String? = null, onAction: (() -> Unit)? = null) {
     Column(
-        Modifier.fillMaxWidth().padding(vertical = 33.dp, horizontal = 20.dp),
+        Modifier.fillMaxWidth().padding(vertical = 19.dp, horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(11.dp)
     ) {
-        Box(Modifier.size(104.dp), contentAlignment = Alignment.Center) {
-            Box(Modifier.size(95.dp).background(Edu.AmberSoft, RoundedCornerShape(29.dp)))
-            Box(Modifier.size(66.dp).background(Edu.Mint, RoundedCornerShape(21.dp)),
-                contentAlignment = Alignment.Center) { Glyph(icon, Modifier.size(35.dp), Edu.Teal) }
+        Box(Modifier.size(58.dp).background(Edu.Mint, RoundedCornerShape(18.dp)),
+            contentAlignment = Alignment.Center) {
+            Glyph(icon, Modifier.size(28.dp), Edu.Teal)
         }
         Text(title, fontWeight = FontWeight.ExtraBold, color = Edu.Navy,
             style = MaterialTheme.typography.titleLarge)
-        Text(subtitle, color = Edu.Muted, style = MaterialTheme.typography.bodyMedium,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        if (subtitle.isNotBlank()) {
+            Text(subtitle, color = Edu.Muted, style = MaterialTheme.typography.bodySmall,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 2)
+        }
         if (action != null && onAction != null) {
             PrimaryButton(action, icon = EduGlyph.PLUS, onClick = onAction)
         }
