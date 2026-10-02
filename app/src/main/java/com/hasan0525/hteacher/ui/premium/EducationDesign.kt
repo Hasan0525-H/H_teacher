@@ -66,9 +66,7 @@ fun AppTopBar(title: String, subtitle: String? = null, onBack: (() -> Unit)? = n
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold, color = Edu.Navy)
-            subtitle?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = Edu.Muted, maxLines = 1)
-            }
+            // Headers show the page name only.
         }
         action?.invoke()
     }
@@ -119,7 +117,7 @@ fun SectionHeader(title: String, subtitle: String? = null,
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(title, color = Edu.Navy, style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold)
-            subtitle?.let { Text(it, color = Edu.Muted, style = MaterialTheme.typography.bodySmall) }
+            // Avoid secondary explanatory copy in section headings.
         }
         if (action != null && onAction != null) TextButton(onClick = onAction) {
             Text(action, color = Edu.Teal, fontWeight = FontWeight.Bold)
@@ -252,9 +250,8 @@ fun EducationBottomNav(selected: String, onNavigate: (String) -> Unit) {
                 val destinations = listOf(
                     Triple("home", "الرئيسية", EduGlyph.DASH),
                     Triple("curricula", "المكتبة", EduGlyph.BOOK),
-                    Triple("exams", "اختبار", EduGlyph.EXAM),
-                    Triple("portfolio", "الإنجاز", EduGlyph.FOLDER),
-                    Triple("tools", "الفصل", EduGlyph.GROUP)
+                    Triple("exams", "الاختبارات", EduGlyph.EXAM),
+                    Triple("tools", "الطلاب", EduGlyph.GROUP)
                 )
                 destinations.forEach { (route, title, icon) ->
                     val active = selected == route
