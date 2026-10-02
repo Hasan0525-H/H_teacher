@@ -26,23 +26,19 @@ fun WorkspaceMasthead(
     modifier: Modifier = Modifier,
     onIconClick: (() -> Unit)? = null
 ) {
+    // One compact heading instead of a second banner and two instructional lines.
     Row(
-        modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Text(kicker, color = Edu.Teal, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-            Text(title, color = Edu.Navy, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold)
-            Text(caption, color = Edu.Muted, style = MaterialTheme.typography.bodyMedium)
+        Text(title, modifier = Modifier.weight(1f), color = Edu.Navy,
+            style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
+            maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (onIconClick != null) {
+            IconButton(onClick = onIconClick) {
+                Glyph(icon, Modifier.size(24.dp), Edu.Navy)
+            }
         }
-        Surface(
-            onClick = onIconClick ?: {},
-            enabled = onIconClick != null,
-            color = Edu.Navy,
-            shape = RoundedCornerShape(22.dp),
-            modifier = Modifier.size(59.dp)
-        ) { Box(contentAlignment = Alignment.Center) { Glyph(icon, Modifier.size(29.dp), Edu.Paper) } }
     }
 }
 
@@ -75,8 +71,7 @@ fun WorkspaceAction(
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(title, color = if (dark) Edu.Paper else Edu.Navy, fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleMedium)
-                Text(caption, color = if (dark) Edu.Paper.copy(alpha = .77f) else Edu.Muted,
-                    style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                // Actions show only the name; the destination reveals details.
             }
             Glyph(EduGlyph.ARROW, Modifier.size(18.dp), if (dark) Edu.Paper else Edu.Muted)
         }
