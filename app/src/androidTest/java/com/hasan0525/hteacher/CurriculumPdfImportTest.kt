@@ -22,6 +22,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import com.hasan0525.hteacher.data.files.CurriculumFileStore
+import com.hasan0525.hteacher.data.pdf.PdfLessonTextExtractor
 import com.hasan0525.hteacher.data.pdf.PdfExamExporter
 import com.hasan0525.hteacher.ui.exam.ExamGeneratorViewModel
 
@@ -80,6 +81,20 @@ class CurriculumPdfImportTest {
             Intents.release()
         }
     }
+    @Test
+    fun importedPdfTextIsAvailableForAutomaticExamGeneration() {
+        val app = compose.activity.application as HTeacherApplication
+        val uri = Uri.parse("content://com.hasan0525.hteacher.testpdf/lesson_for_exam.pdf")
+        val stored = runBlocking { CurriculumFileStore(app).importPdf(uri) }
+        try {
+            val text = runBlocking { PdfLessonTextExtractor(app).extract(stored.absolutePath) }
+            assertTrue("Text for automated generation must be extracted from PDF",
+                text.contains("Real generated PDF educational content"))
+        } finally {
+            File(stored.absolutePath).delete()
+        }
+    }
+
     @Test
     fun invalidPdfIsRejectedWithoutLeavingLocalFiles() {
         val app = compose.activity.application as HTeacherApplication
