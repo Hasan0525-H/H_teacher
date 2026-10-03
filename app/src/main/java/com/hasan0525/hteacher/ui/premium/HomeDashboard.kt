@@ -3,10 +3,10 @@ package com.hasan0525.hteacher.ui.premium
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,17 +18,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hasan0525.hteacher.HTeacherApplication
 import com.hasan0525.hteacher.data.repository.AppSettings
 
-private object SimpleHome {
-    val ink = Color(0xFF193B49)
-    val muted = Color(0xFF72848B)
-    val background = Color(0xFFF7F9FB)
-    val lilac = Color(0xFFF1EDFD)
-    val sky = Color(0xFFE9F4FF)
-    val mint = Color(0xFFE8F6EF)
-    val sand = Color(0xFFFFF2E0)
-}
-
-/** Minimal starting screen. Keep every feature one obvious tap away. */
 @Composable
 fun HomeDashboard(onNavigate: (String) -> Unit) {
     val app = LocalContext.current.applicationContext as HTeacherApplication
@@ -36,137 +25,86 @@ fun HomeDashboard(onNavigate: (String) -> Unit) {
     val students by app.container.teacherRepository.students.collectAsStateWithLifecycle(initialValue = emptyList())
     val settings by app.container.settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
 
-    Scaffold(
-        containerColor = SimpleHome.background,
-        bottomBar = { EducationBottomNav("home", onNavigate) }
-    ) { inset ->
+    Scaffold(containerColor = Edu.Canvas, bottomBar = { EducationBottomNav("home", onNavigate) }) { inset ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(inset),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 26.dp, bottom = 30.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            Modifier.fillMaxSize().padding(inset),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 22.dp),
+            verticalArrangement = Arrangement.spacedBy(22.dp)
         ) {
             item {
-                Row(
-                    Modifier.fillMaxWidth().statusBarsPadding(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            "مرحباً، " + settings.teacherName.ifBlank { "يا معلم" },
-                            color = SimpleHome.ink, style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis
-                        )
+                Row(Modifier.fillMaxWidth().statusBarsPadding(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("المعلم H", color = Edu.Blue, style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold)
+                        Text("مرحباً، ${settings.teacherName.ifBlank { "يا معلم" }}",
+                            color = Edu.Navy, style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
-                    Surface(
-                        onClick = { onNavigate("curricula") },
-                        modifier = Modifier.size(48.dp),
-                        color = Color.White, shape = CircleShape
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Glyph(EduGlyph.SEARCH, Modifier.size(24.dp), SimpleHome.ink)
+                    Surface(onClick = { onNavigate("portfolio") }, modifier = Modifier.size(46.dp),
+                        shape = RoundedCornerShape(15.dp), color = Edu.Navy) {
+                        Box(contentAlignment = Alignment.Center) { Glyph(EduGlyph.GROUP, Modifier.size(22.dp), Color.White) }
+                    }
+                }
+            }
+            item {
+                Surface(color = Edu.Navy, shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(15.dp)) {
+                        Box(Modifier.size(48.dp).padding(2.dp), contentAlignment = Alignment.Center) {
+                            Glyph(EduGlyph.SPARK, Modifier.size(36.dp), Edu.Amber)
+                        }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Text("ابدأ عملك بسرعة", color = Color.White, fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium)
+                            Text("كل أدواتك التعليمية في مكان واحد", color = Color.White.copy(.78f),
+                                style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
             }
+            item { SectionHeader("الوصول السريع") }
             item {
-                Text("ماذا تريد أن تفعل؟", style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold, color = SimpleHome.ink)
-            }
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SimpleAction("إضافة كتاب", EduGlyph.PLUS, SimpleHome.sky,
-                            Modifier.weight(1f)) { onNavigate("curricula") }
-                        SimpleAction("إنشاء اختبار", EduGlyph.EXAM, SimpleHome.lilac,
-                            Modifier.weight(1f)) { onNavigate("exams") }
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        HomeAction("إضافة كتاب", EduGlyph.PLUS, Edu.BlueSoft, Modifier.weight(1f)) { onNavigate("curricula") }
+                        HomeAction("إنشاء اختبار", EduGlyph.EXAM, Edu.AmberSoft, Modifier.weight(1f)) { onNavigate("exams") }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SimpleAction("الطلاب", EduGlyph.GROUP, SimpleHome.mint,
-                            Modifier.weight(1f)) { onNavigate("tools") }
-                        SimpleAction("الإنجازات", EduGlyph.FOLDER, SimpleHome.sand,
-                            Modifier.weight(1f)) { onNavigate("portfolio") }
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        HomeAction("الطلاب", EduGlyph.GROUP, Edu.Mint, Modifier.weight(1f)) { onNavigate("tools") }
+                        HomeAction("ملف الإنجاز", EduGlyph.FOLDER, Color(0xFFF1ECFF), Modifier.weight(1f)) { onNavigate("portfolio") }
                     }
                 }
             }
-            item {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("ملفاتي", Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold, color = SimpleHome.ink)
-                    TextButton(onClick = { onNavigate("curricula") }) {
-                        Text("عرض الكل", color = SimpleHome.ink)
-                    }
-                }
-            }
+            item { SectionHeader("كتبك", action = if (files.isNotEmpty()) "عرض الكل" else null,
+                onAction = { onNavigate("curricula") }) }
             if (files.isEmpty()) {
-                item {
-                    Surface(
-                        onClick = { onNavigate("curricula") },
-                        shape = RoundedCornerShape(22.dp), color = Color.White
-                    ) {
-                        Row(
-                            Modifier.fillMaxWidth().padding(20.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Glyph(EduGlyph.PLUS, Modifier.size(27.dp), SimpleHome.ink)
-                            Text("إضافة كتاب", color = SimpleHome.ink,
-                                fontWeight = FontWeight.Medium)
-                        }
+                item { Surface(onClick = { onNavigate("curricula") }, color = Edu.Paper, shape = RoundedCornerShape(18.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Edu.Line)) {
+                    Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Glyph(EduGlyph.BOOK, Modifier.size(26.dp), Edu.Blue)
+                        Column(Modifier.weight(1f)) { Text("لم تضف كتاباً بعد", color = Edu.Navy, fontWeight = FontWeight.Bold); Text("أضف منهجاً للبدء", color = Edu.Muted, style = MaterialTheme.typography.bodySmall) }
+                        Glyph(EduGlyph.ARROW, Modifier.size(18.dp), Edu.Muted)
                     }
-                }
+                } }
             } else {
                 items(files.take(3), key = { it.id }) { file ->
-                    Surface(
-                        onClick = { onNavigate("curricula") },
-                        color = Color.White, shape = RoundedCornerShape(20.dp)
-                    ) {
-                        Row(
-                            Modifier.fillMaxWidth().padding(15.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Glyph(EduGlyph.BOOK, Modifier.size(30.dp), SimpleHome.ink)
-                            Text(file.title, Modifier.weight(1f), maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                color = SimpleHome.ink, fontWeight = FontWeight.SemiBold)
-                            Glyph(EduGlyph.ARROW, Modifier.size(18.dp), SimpleHome.muted)
-                        }
-                    }
+                    FeatureCard(file.title, "فتح من المكتبة", EduGlyph.BOOK, accent = Edu.Blue) { onNavigate("curricula") }
                 }
             }
-            if (students.isNotEmpty()) {
-                item {
-                    Text("الطلاب: ${students.size}", color = SimpleHome.muted,
-                        style = MaterialTheme.typography.bodyMedium)
-                }
+            if (students.isNotEmpty()) item {
+                Text("${students.size} طالب مسجل", color = Edu.Muted, style = MaterialTheme.typography.bodySmall)
             }
         }
     }
 }
 
 @Composable
-private fun SimpleAction(
-    text: String,
-    icon: EduGlyph,
-    background: Color,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.height(138.dp),
-        color = background,
-        shape = RoundedCornerShape(24.dp)
-    ) {
-        Column(
-            Modifier.fillMaxSize().padding(17.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-            horizontalAlignment = Alignment.Start
-        ) {
-            Glyph(icon, Modifier.size(39.dp), SimpleHome.ink)
-            Text(text, style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold, color = SimpleHome.ink)
+private fun HomeAction(title: String, icon: EduGlyph, color: Color, modifier: Modifier, onClick: () -> Unit) {
+    Surface(onClick = onClick, modifier = modifier.height(112.dp), color = color, shape = RoundedCornerShape(20.dp)) {
+        Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.SpaceBetween) {
+            Glyph(icon, Modifier.size(26.dp), Edu.Navy)
+            Text(title, color = Edu.Navy, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
         }
     }
 }
