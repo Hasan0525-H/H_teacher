@@ -35,12 +35,12 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
     val snackbar=remember{SnackbarHostState()}
     var advanced by rememberSaveable { mutableStateOf(false) }
     var lessonText by rememberSaveable { mutableStateOf("") }
-    var awaitingPdfGeneration by remember { mutableStateOf(false) }
+    var awaitingAiGeneration by remember { mutableStateOf(false) }
     var step by remember{mutableIntStateOf(0)}
     LaunchedEffect(state.generatedExam, state.isAiGenerating) {
-        if (awaitingPdfGeneration && !state.isAiGenerating) {
+        if (awaitingAiGeneration && !state.isAiGenerating) {
             if (state.generatedExam != null) step = 2
-            awaitingPdfGeneration = false
+            awaitingAiGeneration = false
         }
     }
     var bank by remember{mutableStateOf(false)}
@@ -183,7 +183,7 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                                 enabled = state.aiConfigured && !state.isAiGenerating &&
                                     (state.questionCount.toIntOrNull()?.let { it in 1..30 } == true)
                             ) {
-                                awaitingPdfGeneration = true
+                                awaitingAiGeneration = true
                                 vm.generateAiQuestionsFromPdf()
                             }
                         }
@@ -212,19 +212,25 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                                     if (state.isAiGenerating) {
                                         LoadingView("جارٍ إعداد الأسئلة")
                                     }
+                                    val selectedBook = state.curricula.firstOrNull { it.id == state.selectedCurriculumId }
+                                    val hasPdfSource = !selectedBook?.localFileUri.isNullOrBlank()
+                                    val hasIndexedSource = state.selectedCurriculumId != null && state.indexedLessonCount > 0
                                     PrimaryButton(
-                                        "توليد أسئلة",
+                                        "توليد الأسئلة الآن",
                                         Modifier.fillMaxWidth(),
-                                        enabled = !state.isAiGenerating &&
-                                            (lessonText.isNotBlank() ||
-                                                (state.selectedCurriculumId != null && state.indexedLessonCount > 0)),
+                                        enabled = !state.isAiGenerating && state.aiConfigured &&
+                                            (lessonText.isNotBlank() || hasPdfSource || hasIndexedSource),
                                         icon = EduGlyph.SPARK
                                     ) {
-                                        if (lessonText.isNotBlank()) vm.generateAiQuestionsFromText(lessonText)
-                                        else vm.generateAiQuestions()
+                                        awaitingAiGeneration = true
+                                        when {
+                                            lessonText.isNotBlank() -> vm.generateAiQuestionsFromText(lessonText)
+                                            hasPdfSource -> vm.generateAiQuestionsFromPdf()
+                                            else -> vm.generateAiQuestions()
+                                        }
                                     }
-                                    if (lessonText.isBlank() && state.indexedLessonCount == 0) {
-                                        Text("الصق النص لإنشاء أسئلة، أو أضفها يدويًا.", color = Edu.Muted)
+                                    if (lessonText.isBlank() && !hasPdfSource && !hasIndexedSource) {
+                                        Text("اختر كتابًا من المصدر أو الصق نص الدرس أولًا.", color = Edu.Muted)
                                     }
                                 } else {
                                     Text("التوليد السحابي غير متاح. يمكنك إضافة سؤال أو إنشاء نموذج فارغ.",

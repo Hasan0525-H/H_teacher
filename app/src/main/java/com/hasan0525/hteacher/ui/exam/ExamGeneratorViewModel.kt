@@ -506,30 +506,28 @@ class ExamGeneratorViewModel(
                     )
                 }
 
-                if (fromPdf) {
-                    val marks = state.totalMarks.toIntOrNull()?.takeIf { it in 1..500 }
-                        ?: generated.size
-                    generatedExam.value = GeneratedExam(
-                        title = state.title.trim().ifBlank { "اختبار" },
-                        subjectName = subject.name,
-                        curriculumTitle = curriculum?.title,
-                        totalMarks = marks,
-                        questions = generated.mapIndexed { index, item ->
-                            ExamQuestionItem(
-                                number = index + 1,
-                                questionText = item.question,
-                                answerText = item.answer.ifBlank { null },
-                                type = QuestionType.fromStorage(item.type),
-                                difficulty = Difficulty.fromStorage(item.difficulty),
-                                mark = marks.toDouble() / generated.size
-                            )
-                        }
-                    )
-                    message.value = "تم توليد ${generated.size} سؤالًا. راجع الأسئلة قبل الطباعة."
-                } else {
-                    generatedExam.value = null
-                    message.value = "أُضيف ${generated.size} سؤالًا إلى بنك الأسئلة"
-                }
+                // Generation is the end-to-end action: persist the questions and open
+                // the reviewable paper immediately, regardless of whether the source
+                // was pasted text, indexed lessons, or a PDF.
+                val marks = state.totalMarks.toIntOrNull()?.takeIf { it in 1..500 }
+                    ?: generated.size
+                generatedExam.value = GeneratedExam(
+                    title = state.title.trim().ifBlank { "اختبار" },
+                    subjectName = subject.name,
+                    curriculumTitle = curriculum?.title,
+                    totalMarks = marks,
+                    questions = generated.mapIndexed { index, item ->
+                        ExamQuestionItem(
+                            number = index + 1,
+                            questionText = item.question,
+                            answerText = item.answer.ifBlank { null },
+                            type = QuestionType.fromStorage(item.type),
+                            difficulty = Difficulty.fromStorage(item.difficulty),
+                            mark = marks.toDouble() / generated.size
+                        )
+                    }
+                )
+                message.value = "تم توليد ${generated.size} سؤالًا. راجع الأسئلة قبل الطباعة."
             } catch (error: Throwable) {
                 message.value = error.message
                     ?: "تعذر توليد الأسئلة بالذكاء الاصطناعي"
