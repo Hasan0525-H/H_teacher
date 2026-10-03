@@ -39,7 +39,11 @@ class PdfImportTestProvider : ContentProvider() {
         val document = PdfDocument()
         try {
             val page = document.startPage(PdfDocument.PageInfo.Builder(400, 500, 1).create())
-            page.canvas.drawText("Real generated PDF", 48f, 90f, android.graphics.Paint())
+            val paint = android.graphics.Paint().apply { textSize = 13f }
+            repeat(5) { index ->
+                page.canvas.drawText("Real generated PDF educational content for exam creation",
+                    38f, 75f + index * 28f, paint)
+            }
             document.finishPage(page)
             path.outputStream().use { output -> document.writeTo(output) }
         } finally {
