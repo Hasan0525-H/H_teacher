@@ -35,7 +35,14 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
     val snackbar=remember{SnackbarHostState()}
     var advanced by rememberSaveable { mutableStateOf(false) }
     var lessonText by rememberSaveable { mutableStateOf("") }
+    var awaitingPdfGeneration by remember { mutableStateOf(false) }
     var step by remember{mutableIntStateOf(0)}
+    LaunchedEffect(state.generatedExam) {
+        if (awaitingPdfGeneration && state.generatedExam != null) {
+            awaitingPdfGeneration = false
+            step = 2
+        }
+    }
     var bank by remember{mutableStateOf(false)}
     var addQuestion by remember{mutableStateOf(false)}
     var deleteQuestion by remember{mutableStateOf<Long?>(null)}
@@ -163,6 +170,24 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                             }
                         }
                     }
+                    // Single action: take the selected PDF, generate questions, open preview.
+                    val selectedPdf = state.curricula.firstOrNull {
+                        it.id == state.selectedCurriculumId
+                    }?.localFileUri
+                    if (selectedPdf != null) {
+                        item {
+                            PrimaryButton(
+                                "توليد اختبار من الكتاب PDF",
+                                Modifier.fillMaxWidth(),
+                                icon = EduGlyph.SPARK,
+                                enabled = state.aiConfigured && !state.isAiGenerating &&
+                                    (state.questionCount.toIntOrNull() in 1..30)
+                            ) {
+                                awaitingPdfGeneration = true
+                                vm.generateAiQuestionsFromPdf()
+                            }
+                        }
+                    }
                     // Provide a usable outcome even if the question bank or cloud is empty.
                     if (state.matchingQuestionCount == 0) {
                         item {
@@ -171,7 +196,7 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                             }
                         }
                     }
-                    if (advanced || state.matchingQuestionCount == 0) {
+                    if (advanced || (state.matchingQuestionCount == 0 && selectedPdf == null)) {
                         item {
                             AppCard {
                                 SectionHeader("إنشاء أسئلة من نص الدرس")
