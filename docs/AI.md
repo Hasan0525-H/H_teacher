@@ -1,7 +1,7 @@
 # Cloud AI Architecture
 
 ## قاعدة الأمان
-لا يتم وضع مفاتيح Gemini أو Groq أو OpenRouter أو Cloudflare داخل APK.
+لا يتم وضع مفاتيح Gemini أو Groq داخل APK.
 
 ## Android
 `AiQuestionService` يرسل طلب HTTPS إلى:
@@ -16,7 +16,7 @@ Cloudflare Worker:
 - يرفض prompt أكبر من 60,000 حرف.
 - يطبق Rate Limiting.
 - لا يسمح للعميل بتحديد URL خارجي.
-- يجرب المزودات بالترتيب المعرّف في `PROVIDER_ORDER`.
+- يجرب Gemini ثم Groq بالترتيب المعرّف في `PROVIDER_ORDER`.
 - لا يعيد مفاتيح أو أخطاء upstream الحساسة.
 
 ## البيانات
