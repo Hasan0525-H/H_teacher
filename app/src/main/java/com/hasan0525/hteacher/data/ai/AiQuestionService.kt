@@ -1,12 +1,17 @@
 package com.hasan0525.hteacher.data.ai
 
 import com.hasan0525.hteacher.data.repository.AppSettingsRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
+import javax.net.ssl.SSLException
 
 data class AiExamQuestionRequest(
     val subjectName: String,
@@ -48,13 +53,35 @@ class AiQuestionService(
             .put("prompt", prompt)
             .put("maxOutputTokens", 4096)
 
+        // Retry transient transport failures once. Never retry API errors,
+        // malformed responses, or certificate failures.
+        repeat(2) { attempt ->
+            try {
+                return@withContext requestQuestions(payload, installId)
+            } catch (error: SSLException) {
+                throw IllegalStateException("تعذر إنشاء اتصال آمن بخدمة التوليد", error)
+            } catch (error: UnknownHostException) {
+                throw IllegalStateException("تعذر الوصول لخدمة التوليد. تحقق من اتصال الإنترنت", error)
+            } catch (error: SocketTimeoutException) {
+                if (attempt == 1) throw IllegalStateException(
+                    "انتهت مهلة التوليد. حاول مجددًا بعد قليل", error)
+            } catch (error: SocketException) {
+                if (attempt == 1) throw IllegalStateException(
+                    "انقطع اتصال التوليد. تحقق من الإنترنت ثم أعد المحاولة", error)
+            }
+            delay(1_500)
+        }
+        error("تعذر الاتصال بخدمة التوليد")
+    }
+
+    private fun requestQuestions(payload: JSONObject, installId: String): List<AiGeneratedQuestion> {
         val connection = (
             URL(baseUrl + "/v1/generate").openConnection()
                 as HttpURLConnection
             ).apply {
             requestMethod = "POST"
             connectTimeout = 20_000
-            readTimeout = 70_000
+            readTimeout = 190_000
             doOutput = true
             setRequestProperty(
                 "Content-Type",
@@ -96,7 +123,13 @@ class AiQuestionService(
                     ?.takeIf { it.isNotBlank() }
                     ?: "فشل اتصال AI: " + status
 
-                error(errorMessage)
+                val userMessage = when (errorMessage) {
+                    "rate_limited" -> "طلبات كثيرة. انتظر دقيقة ثم أعد المحاولة"
+                    "no_provider_available" -> "خدمة توليد الأسئلة غير متاحة حاليًا. حاول لاحقًا"
+                    "request_too_large", "invalid_prompt" -> "نص المنهج كبير جدًا. اختر منهجًا أقصر"
+                    else -> "تعذر توليد الأسئلة (رمز الخدمة: $status)"
+                }
+                error(userMessage)
             }
 
             val response = JSONObject(body)
@@ -105,7 +138,7 @@ class AiQuestionService(
                 "رد الذكاء الاصطناعي فارغ"
             }
 
-            parseQuestions(text)
+            return parseQuestions(text)
         } finally {
             connection.disconnect()
         }
