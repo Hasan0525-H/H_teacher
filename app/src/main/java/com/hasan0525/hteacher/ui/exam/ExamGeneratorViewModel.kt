@@ -49,6 +49,7 @@ data class ExamGeneratorUiState(
     val generatedExam: GeneratedExam? = null,
     val isExporting: Boolean = false,
     val isAiGenerating: Boolean = false,
+    val generationProgress: Int = 0,
     val aiConfigured: Boolean = false,
     val indexedLessonCount: Int = 0,
     val matchingQuestionCount: Int = 0,
@@ -73,6 +74,7 @@ private data class ExamAuxState(
     val generatedExam: GeneratedExam?,
     val isExporting: Boolean,
     val isAiGenerating: Boolean,
+    val generationProgress: Int,
     val message: String?
 )
 
@@ -86,6 +88,7 @@ class ExamGeneratorViewModel(
     private val generatedExam = MutableStateFlow<GeneratedExam?>(null)
     private val isExporting = MutableStateFlow(false)
     private val isAiGenerating = MutableStateFlow(false)
+    private val generationProgress = MutableStateFlow(0)
     private val message = MutableStateFlow<String?>(null)
 
     private val indexState = combine(
@@ -106,12 +109,14 @@ class ExamGeneratorViewModel(
         generatedExam,
         isExporting,
         isAiGenerating,
+        generationProgress,
         message
-    ) { exam, exporting, aiGenerating, currentMessage ->
+    ) { exam, exporting, aiGenerating, progress, currentMessage ->
         ExamAuxState(
             generatedExam = exam,
             isExporting = exporting,
             isAiGenerating = aiGenerating,
+            generationProgress = progress,
             message = currentMessage
         )
     }
@@ -181,6 +186,7 @@ class ExamGeneratorViewModel(
             generatedExam = aux.generatedExam,
             isExporting = aux.isExporting,
             isAiGenerating = aux.isAiGenerating,
+            generationProgress = aux.generationProgress,
             aiConfigured = aiQuestionService.isConfigured,
             indexedLessonCount = indexedLessonCount,
             matchingQuestionCount = core.questions.count { question ->
@@ -414,6 +420,17 @@ class ExamGeneratorViewModel(
 
     fun generateAiQuestionsFromPdf() = generateAiQuestions(null, fromPdf = true)
 
+    /** Generates directly from the curriculum selected in the source step. */
+    fun generateAiQuestionsFromSelectedSource() {
+        val state = uiState.value
+        val curriculum = state.curricula.firstOrNull { it.id == state.selectedCurriculumId }
+        when {
+            curriculum?.localFileUri?.isNotBlank() == true -> generateAiQuestionsFromPdf()
+            state.selectedCurriculumId != null && state.indexedLessonCount > 0 -> generateAiQuestions()
+            else -> message.value = "اختر منهجًا يحتوي على ملف أو نص دروس"
+        }
+    }
+
     fun generateAiQuestions() = generateAiQuestions(null)
 
     private fun generateAiQuestions(sourceText: String?, fromPdf: Boolean = false) {
@@ -464,11 +481,13 @@ class ExamGeneratorViewModel(
 
         viewModelScope.launch {
             isAiGenerating.value = true
+            generationProgress.value = 5
             try {
                 val lessonContext = if (fromPdf) {
                     val extractor = requireNotNull(pdfTextExtractor) {
                         "استخراج نص PDF غير متاح في هذه النسخة"
                     }
+                    generationProgress.value = 22
                     extractor.extract(requireNotNull(curriculum?.localFileUri))
                 } else {
                     customSource ?: indexedLessons.joinToString(separator = "\n\n") { lesson ->
@@ -476,6 +495,7 @@ class ExamGeneratorViewModel(
                             "الدرس: ${lesson.title}\n${lesson.textContent}"
                     }.take(50_000)
                 }
+                generationProgress.value = 38
                 val generated = aiQuestionService.generateQuestions(
                     AiExamQuestionRequest(
                         subjectName = subject.name,
@@ -491,6 +511,7 @@ class ExamGeneratorViewModel(
                     )
                 )
 
+                generationProgress.value = 78
                 generated.forEach { item ->
                     repository.addQuestion(
                         QuestionEntity(
@@ -506,6 +527,7 @@ class ExamGeneratorViewModel(
                     )
                 }
 
+                generationProgress.value = 94
                 // Generation is the end-to-end action: persist the questions and open
                 // the reviewable paper immediately, regardless of whether the source
                 // was pasted text, indexed lessons, or a PDF.
@@ -527,8 +549,10 @@ class ExamGeneratorViewModel(
                         )
                     }
                 )
+                generationProgress.value = 100
                 message.value = "تم توليد ${generated.size} سؤالًا. راجع الأسئلة قبل الطباعة."
             } catch (error: Throwable) {
+                generationProgress.value = 0
                 message.value = error.message
                     ?: "تعذر توليد الأسئلة بالذكاء الاصطناعي"
             } finally {
