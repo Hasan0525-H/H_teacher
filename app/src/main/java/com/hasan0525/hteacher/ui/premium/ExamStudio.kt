@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -32,7 +33,8 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
     val vm:ExamGeneratorViewModel=viewModel(factory=ExamGeneratorViewModelFactory(app))
     val state by vm.uiState.collectAsStateWithLifecycle()
     val snackbar=remember{SnackbarHostState()}
-    var advanced by remember { mutableStateOf(false) }
+    var advanced by rememberSaveable { mutableStateOf(false) }
+    var lessonText by rememberSaveable { mutableStateOf("") }
     var step by remember{mutableIntStateOf(0)}
     var bank by remember{mutableStateOf(false)}
     var addQuestion by remember{mutableStateOf(false)}
@@ -131,11 +133,25 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                             TextButton(onClick = { addQuestion = true }) { Text("+ سؤال") }
                         }
                         if (state.matchingQuestionCount == 0) {
-                            Text(
-                                if (state.questions.isEmpty()) "أضف سؤالًا للبدء."
-                                else "لا توجد أسئلة بهذا النوع أو المستوى. عدّل الخيارات.",
-                                color = Edu.Muted
-                            )
+                            Surface(color = Edu.Mint, shape = RoundedCornerShape(18.dp)) {
+                                Column(
+                                    Modifier.fillMaxWidth().padding(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        if (state.questions.isEmpty()) "لا توجد أسئلة بعد"
+                                        else "الأسئلة الموجودة لا تطابق اختياراتك",
+                                        color = Edu.Navy, fontWeight = FontWeight.Bold
+                                    )
+                                    PrimaryButton("إضافة سؤال", Modifier.fillMaxWidth(),
+                                        icon = EduGlyph.PLUS) { addQuestion = true }
+                                    if (state.questions.isNotEmpty()) {
+                                        TextButton(onClick = { advanced = true }) {
+                                            Text("تغيير النوع والمستوى")
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     item {
@@ -147,22 +163,52 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                             }
                         }
                     }
-                    if (advanced || state.matchingQuestionCount == 0) {
-                    item {
-                        AppCard {
-                            SectionHeader("إنشاء أسئلة")
-                            if(state.isAiGenerating) LoadingView("جارٍ إنشاء الأسئلة")
-                            PrimaryButton("توليد الأسئلة بالذكاء الاصطناعي",
-                                Modifier.fillMaxWidth(),icon=EduGlyph.SPARK,
-                                enabled=state.aiConfigured&&state.indexedLessonCount>0&&state.selectedCurriculumId!=null&&!state.isAiGenerating) {
-                                vm.generateAiQuestions()
+                    // Provide a usable outcome even if the question bank or cloud is empty.
+                    if (state.matchingQuestionCount == 0) {
+                        item {
+                            SecondaryButton("إنشاء نموذج فارغ للطباعة", Modifier.fillMaxWidth()) {
+                                if (vm.generateBlankExam()) step = 2
                             }
-                            if(!state.aiConfigured) Text("الذكاء الاصطناعي غير متاح حالياً", color=Edu.Muted)
-                            else if(state.selectedCurriculumId == null) Text("اختر منهجاً لإنشاء الأسئلة",color=Edu.Muted)
-                            else if(state.indexedLessonCount==0) Text("أضف نص الدروس إلى المنهج أولاً",color=Edu.Muted)
                         }
                     }
+                    if (advanced || state.matchingQuestionCount == 0) {
+                        item {
+                            AppCard {
+                                SectionHeader("إنشاء أسئلة من نص الدرس")
+                                if (state.aiConfigured) {
+                                    OutlinedTextField(
+                                        value = lessonText,
+                                        onValueChange = { lessonText = it.take(50_000) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        label = { Text("الصق نص الدرس") },
+                                        minLines = 3,
+                                        maxLines = 8
+                                    )
+                                    if (state.isAiGenerating) {
+                                        LoadingView("جارٍ إعداد الأسئلة")
+                                    }
+                                    PrimaryButton(
+                                        "توليد أسئلة",
+                                        Modifier.fillMaxWidth(),
+                                        enabled = !state.isAiGenerating &&
+                                            (lessonText.isNotBlank() ||
+                                                (state.selectedCurriculumId != null && state.indexedLessonCount > 0)),
+                                        icon = EduGlyph.SPARK
+                                    ) {
+                                        if (lessonText.isNotBlank()) vm.generateAiQuestionsFromText(lessonText)
+                                        else vm.generateAiQuestions()
+                                    }
+                                    if (lessonText.isBlank() && state.indexedLessonCount == 0) {
+                                        Text("الصق النص لإنشاء أسئلة، أو أضفها يدويًا.", color = Edu.Muted)
+                                    }
+                                } else {
+                                    Text("التوليد السحابي غير متاح. يمكنك إضافة سؤال أو إنشاء نموذج فارغ.",
+                                        color = Edu.Muted)
+                                }
+                            }
+                        }
                     }
+
                 }
                 else -> {
                     item { SectionHeader("الاختبار") }
