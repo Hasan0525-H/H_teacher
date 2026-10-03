@@ -122,31 +122,44 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                             }
                         }
                     }
-                    if (advanced) {
                     item {
-                        FeatureCard("بنك الأسئلة","إضافة وتحرير الأسئلة المحفوظة",EduGlyph.FOLDER,
-                            Modifier.fillMaxWidth(),Edu.Teal){bank=true}
-                    }
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text("الأسئلة المتاحة: ${state.matchingQuestionCount}",
+                                Modifier.weight(1f), color = Edu.Navy,
+                                fontWeight = FontWeight.SemiBold)
+                            TextButton(onClick = { bank = true }) { Text("بنك الأسئلة") }
+                            TextButton(onClick = { addQuestion = true }) { Text("+ سؤال") }
+                        }
+                        if (state.matchingQuestionCount == 0) {
+                            Text(
+                                if (state.questions.isEmpty()) "أضف سؤالًا للبدء."
+                                else "لا توجد أسئلة بهذا النوع أو المستوى. عدّل الخيارات.",
+                                color = Edu.Muted
+                            )
+                        }
                     }
                     item {
                         Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
                             SecondaryButton("السابق",Modifier.weight(1f)){step=0}
                             PrimaryButton("إنشاء الاختبار",Modifier.weight(1.3f),icon=EduGlyph.CHECK,
-                                enabled=!state.isAiGenerating){vm.generateExam();step=2}
+                                enabled=!state.isAiGenerating && state.matchingQuestionCount > 0){
+                                if (vm.generateExam()) step = 2
+                            }
                         }
                     }
-                    if (advanced) {
+                    if (advanced || state.matchingQuestionCount == 0) {
                     item {
                         AppCard {
-                            SectionHeader("إنشاء بالذكاء الاصطناعي")
+                            SectionHeader("إنشاء أسئلة")
                             if(state.isAiGenerating) LoadingView("جارٍ إنشاء الأسئلة")
                             PrimaryButton("توليد الأسئلة بالذكاء الاصطناعي",
                                 Modifier.fillMaxWidth(),icon=EduGlyph.SPARK,
                                 enabled=state.aiConfigured&&state.indexedLessonCount>0&&state.selectedCurriculumId!=null&&!state.isAiGenerating) {
                                 vm.generateAiQuestions()
                             }
-                            if(!state.aiConfigured)Text("الخدمة السحابية غير مفعّلة",color=Edu.Muted)
-                            else if(state.indexedLessonCount==0)Text("أضف محتوى الدروس في المكتبة",color=Edu.Muted)
+                            if(!state.aiConfigured) Text("الذكاء الاصطناعي غير متاح حالياً", color=Edu.Muted)
+                            else if(state.selectedCurriculumId == null) Text("اختر منهجاً لإنشاء الأسئلة",color=Edu.Muted)
+                            else if(state.indexedLessonCount==0) Text("أضف نص الدروس إلى المنهج أولاً",color=Edu.Muted)
                         }
                     }
                     }
@@ -156,8 +169,8 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                     val exam=state.generatedExam
                     if(exam==null) {
                         item {
-                            EmptyState("لم يُنشأ الاختبار","",
-                                EduGlyph.EXAM,"العودة للإعداد"){step=1}
+                            EmptyState("لم يُنشأ الاختبار","أضف أسئلة أو عدّل الخيارات",
+                                EduGlyph.EXAM,"إضافة أسئلة"){step=1;addQuestion=true}
                         }
                     } else {
                         item {
