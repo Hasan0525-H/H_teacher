@@ -13,6 +13,7 @@ import com.hasan0525.hteacher.data.local.entity.QuestionEntity
 import com.hasan0525.hteacher.data.local.entity.LessonEntity
 import com.hasan0525.hteacher.data.local.entity.SubjectEntity
 import com.hasan0525.hteacher.data.pdf.PdfExamExporter
+import com.hasan0525.hteacher.data.pdf.PdfLessonTextExtractor
 import com.hasan0525.hteacher.data.repository.OfflineTeacherRepository
 import com.hasan0525.hteacher.domain.exam.Difficulty
 import com.hasan0525.hteacher.domain.exam.ExamQuestionItem
@@ -78,7 +79,8 @@ private data class ExamAuxState(
 class ExamGeneratorViewModel(
     private val repository: OfflineTeacherRepository,
     private val exporter: PdfExamExporter,
-    private val aiQuestionService: AiQuestionService
+    private val aiQuestionService: AiQuestionService,
+    private val pdfTextExtractor: PdfLessonTextExtractor? = null
 ) : ViewModel() {
     private val config = MutableStateFlow(ExamConfig())
     private val generatedExam = MutableStateFlow<GeneratedExam?>(null)
@@ -410,9 +412,12 @@ class ExamGeneratorViewModel(
 
     fun generateAiQuestionsFromText(text: String) = generateAiQuestions(text.trim().take(50_000))
 
+    fun generateAiQuestionsFromPdf() = generateAiQuestions(null, fromPdf = true)
+
     fun generateAiQuestions() = generateAiQuestions(null)
 
-    private fun generateAiQuestions(sourceText: String?) {
+    private fun generateAiQuestions(sourceText: String?, fromPdf: Boolean = false) {
+        if (isAiGenerating.value) return
         val state = uiState.value
         val subject = state.subjects.firstOrNull {
             it.id == state.selectedSubjectId
@@ -448,20 +453,29 @@ class ExamGeneratorViewModel(
                 { unitById[it.unitId]?.sortOrder ?: 0 }, { it.sortOrder }
             ))
 
-        if (indexedLessons.isEmpty() && customSource == null) {
+        if (!fromPdf && indexedLessons.isEmpty() && customSource == null) {
             message.value = "الصق نص الدرس أو أضف نصوص الدروس في المكتبة"
             return
         }
-        val lessonContext = customSource ?: indexedLessons.joinToString(
-            separator = "\n\n"
-        ) { lesson ->
-            "الوحدة: ${unitById[lesson.unitId]?.title.orEmpty()}\n" +
-                "الدرس: ${lesson.title}\n${lesson.textContent}"
-        }.take(50_000)
+        if (fromPdf && curriculum?.localFileUri.isNullOrBlank()) {
+            message.value = "المنهج لا يحتوي ملف PDF محفوظًا"
+            return
+        }
 
         viewModelScope.launch {
             isAiGenerating.value = true
             try {
+                val lessonContext = if (fromPdf) {
+                    val extractor = requireNotNull(pdfTextExtractor) {
+                        "استخراج نص PDF غير متاح في هذه النسخة"
+                    }
+                    extractor.extract(requireNotNull(curriculum?.localFileUri))
+                } else {
+                    customSource ?: indexedLessons.joinToString(separator = "\n\n") { lesson ->
+                        "الوحدة: ${unitById[lesson.unitId]?.title.orEmpty()}\n" +
+                            "الدرس: ${lesson.title}\n${lesson.textContent}"
+                    }.take(50_000)
+                }
                 val generated = aiQuestionService.generateQuestions(
                     AiExamQuestionRequest(
                         subjectName = subject.name,
@@ -492,10 +506,30 @@ class ExamGeneratorViewModel(
                     )
                 }
 
-                generatedExam.value = null
-                message.value = "تمت إضافة " +
-                    generated.size +
-                    " سؤالًا من AI إلى بنك الأسئلة"
+                if (fromPdf) {
+                    val marks = state.totalMarks.toIntOrNull()?.takeIf { it in 1..500 }
+                        ?: generated.size
+                    generatedExam.value = GeneratedExam(
+                        title = state.title.trim().ifBlank { "اختبار" },
+                        subjectName = subject.name,
+                        curriculumTitle = curriculum?.title,
+                        totalMarks = marks,
+                        questions = generated.mapIndexed { index, item ->
+                            ExamQuestionItem(
+                                number = index + 1,
+                                questionText = item.question,
+                                answerText = item.answer.ifBlank { null },
+                                type = QuestionType.fromStorage(item.type),
+                                difficulty = Difficulty.fromStorage(item.difficulty),
+                                mark = marks.toDouble() / generated.size
+                            )
+                        }
+                    )
+                    message.value = "تم توليد ${generated.size} سؤالًا. راجع الأسئلة قبل الطباعة."
+                } else {
+                    generatedExam.value = null
+                    message.value = "أُضيف ${generated.size} سؤالًا إلى بنك الأسئلة"
+                }
             } catch (error: Throwable) {
                 message.value = error.message
                     ?: "تعذر توليد الأسئلة بالذكاء الاصطناعي"
@@ -595,7 +629,8 @@ class ExamGeneratorViewModelFactory(
             return ExamGeneratorViewModel(
                 repository = application.container.teacherRepository,
                 exporter = PdfExamExporter(application),
-                aiQuestionService = application.container.aiQuestionService
+                aiQuestionService = application.container.aiQuestionService,
+                pdfTextExtractor = PdfLessonTextExtractor(application)
             ) as T
         }
 
