@@ -34,6 +34,7 @@ class PdfExamExporter(
                 }
             )
 
+            require(!includeAnswers || !exam.isTemplate) { "النموذج الفارغ لا يحتوي إجابات" }
             writer.start()
 
             writer.drawText(
@@ -65,7 +66,7 @@ class PdfExamExporter(
 
             exam.questions.forEach { question ->
                 val heading = "السؤال " + question.number +
-                    " - " + question.type.label +
+                    (if (exam.isTemplate) "" else " - " + question.type.label) +
                     " (" + formatMark(question.mark) + " درجة)"
 
                 writer.drawText(
