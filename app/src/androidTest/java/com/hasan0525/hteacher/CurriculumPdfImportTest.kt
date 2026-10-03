@@ -22,6 +22,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import com.hasan0525.hteacher.data.files.CurriculumFileStore
+import com.hasan0525.hteacher.data.pdf.PdfExamExporter
+import com.hasan0525.hteacher.ui.exam.ExamGeneratorViewModel
 
 @RunWith(AndroidJUnit4::class)
 class CurriculumPdfImportTest {
@@ -108,6 +110,25 @@ class CurriculumPdfImportTest {
             })
         } finally {
             saved.delete()
+        }
+    }
+
+    @Test
+    fun emptyQuestionBankSupportsClearlyMarkedBlankExam() {
+        val app = compose.activity.application as HTeacherApplication
+        val repo = app.container.teacherRepository
+        val subjectId = runBlocking { repo.addSubject("blank_exam_${System.currentTimeMillis()}") }
+        val vm = ExamGeneratorViewModel(repo, PdfExamExporter(app), app.container.aiQuestionService)
+        runBlocking {
+            vm.uiState.first { state -> state.subjects.any { it.id == subjectId } }
+            vm.selectSubject(subjectId)
+            vm.uiState.first { state -> state.selectedSubjectId == subjectId }
+            assertTrue("Blank template generation failed", vm.generateBlankExam())
+            val generated = vm.uiState.first { state -> state.generatedExam != null }.generatedExam!!
+            assertTrue("Generated paper must be a labelled blank template", generated.isTemplate)
+            assertTrue("Template question count incorrect", generated.questions.size == 10)
+            assertTrue("Blank template must not claim answers",
+                generated.questions.all { it.answerText == null })
         }
     }
 
