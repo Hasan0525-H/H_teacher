@@ -392,10 +392,11 @@ class ExamGeneratorViewModel(
             subjectName = subject.name,
             curriculumTitle = state.curricula.firstOrNull { it.id == state.selectedCurriculumId }?.title,
             totalMarks = marks,
+            isTemplate = true,
             questions = (1..count).map { index ->
                 ExamQuestionItem(
                     number = index,
-                    questionText = "السؤال $index: ........................................",
+                    questionText = "........................................................................",
                     answerText = null,
                     type = QuestionType.ESSAY,
                     difficulty = Difficulty.MEDIUM,
