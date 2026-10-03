@@ -227,7 +227,7 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                                         questionsPicker.launch(exam.title+"-الاختبار.pdf")
                                     }
                                     SecondaryButton("نموذج الإجابة",Modifier.weight(1f),
-                                        enabled=!state.isExporting){
+                                        enabled=!state.isExporting && !exam.isTemplate){
                                         answersPicker.launch(exam.title+"-الإجابة.pdf")
                                     }
                                 }
@@ -258,7 +258,7 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                                                     color=Edu.Navy,fontWeight=FontWeight.SemiBold)
                                                 Text("(${q.mark})",color=Edu.Muted)
                                             }
-                                            Text(q.type.label,color=Edu.Muted,
+                                            if (!exam.isTemplate) Text(q.type.label,color=Edu.Muted,
                                                 style=MaterialTheme.typography.labelSmall)
                                             HorizontalDivider(color=Edu.Line)
                                         }
