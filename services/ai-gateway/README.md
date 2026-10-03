@@ -9,19 +9,17 @@ Cloudflare Worker وسيط بين تطبيق المعلم H ومزودات ال�
 - Rate Limiting لكل IP + installation ID.
 - المهمة المسموحة حاليًا: توليد أسئلة من نصوص الدروس فقط.
 
-## المزودات
+## المزودات المجانية
 ترتيب المحاولة الافتراضي:
-1. Workers AI
-2. Gemini
-3. Groq
-4. OpenRouter
+1. Gemini Flash Free Tier
+2. Groq Free
 
 أي مزود لا يملك model/key مضبوطًا يتم تخطيه تلقائيًا.
 إذا تجاوز المزود 18 ثانية ينتقل النظام تلقائيًا إلى المزود التالي.
 
 النماذج الافتراضية الحالية:
-- Workers AI: `@cf/zai-org/glm-4.7-flash`
-- Gemini: `gemini-3.8-flash`
+- Gemini: `gemini-2.5-flash`
+- Groq: `llama-3.3-70b-versatile`
 
 يمكن تغيير أسماء النماذج من إعدادات Worker دون تحديث APK.
 
@@ -37,18 +35,13 @@ npm install
 ```bash
 npx wrangler secret put GEMINI_API_KEY
 npx wrangler secret put GROQ_API_KEY
-npx wrangler secret put OPENROUTER_API_KEY
 ```
 
-Workers AI وGemini لهما أسماء افتراضية في `wrangler.jsonc`.
-لـ Groq وOpenRouter اضبط فقط اسم النموذج إذا أردت تفعيلهما:
+أسماء النماذج الافتراضية موجودة في `wrangler.jsonc`.
+يمكن تغيير:
 - `GROQ_MODEL`
-- `OPENROUTER_MODEL`
-
-ويمكن تغيير:
 - `PROVIDER_ORDER`
 - `PROVIDER_TIMEOUT_MS`
-- `CF_AI_MODEL`
 - `GEMINI_MODEL`
 بدون أي تعديل في تطبيق Android.
 
