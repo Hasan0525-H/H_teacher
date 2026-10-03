@@ -373,7 +373,45 @@ class ExamGeneratorViewModel(
         return true
     }
 
-    fun generateAiQuestions() {
+    /** Printable template; blank items are intentionally not generated questions. */
+    fun generateBlankExam(): Boolean {
+        val state = uiState.value
+        val subject = state.subjects.firstOrNull { it.id == state.selectedSubjectId }
+        if (subject == null) {
+            message.value = "اختر المادة أولاً"
+            return false
+        }
+        val count = state.questionCount.toIntOrNull()
+        val marks = state.totalMarks.toIntOrNull()
+        if (count == null || count !in 1..100 || marks == null || marks !in 1..500) {
+            message.value = "تحقق من عدد الأسئلة والدرجة الكلية"
+            return false
+        }
+        generatedExam.value = GeneratedExam(
+            title = state.title.trim().ifBlank { "اختبار" },
+            subjectName = subject.name,
+            curriculumTitle = state.curricula.firstOrNull { it.id == state.selectedCurriculumId }?.title,
+            totalMarks = marks,
+            questions = (1..count).map { index ->
+                ExamQuestionItem(
+                    number = index,
+                    questionText = "السؤال $index: ........................................",
+                    answerText = null,
+                    type = QuestionType.ESSAY,
+                    difficulty = Difficulty.MEDIUM,
+                    mark = marks.toDouble() / count.toDouble()
+                )
+            }
+        )
+        message.value = "تم إعداد نموذج فارغ للطباعة"
+        return true
+    }
+
+    fun generateAiQuestionsFromText(text: String) = generateAiQuestions(text.trim().take(50_000))
+
+    fun generateAiQuestions() = generateAiQuestions(null)
+
+    private fun generateAiQuestions(sourceText: String?) {
         val state = uiState.value
         val subject = state.subjects.firstOrNull {
             it.id == state.selectedSubjectId
@@ -387,8 +425,8 @@ class ExamGeneratorViewModel(
             return
         }
 
-        if (subject == null || curriculum == null) {
-            message.value = "اختر مادة ومنهجًا محددًا أولًا"
+        if (subject == null || (curriculum == null && sourceText.isNullOrBlank())) {
+            message.value = "اختر المادة ومنهجًا أو الصق نص الدرس"
             return
         }
 
@@ -398,42 +436,26 @@ class ExamGeneratorViewModel(
             return
         }
 
+        val customSource = sourceText?.takeIf { it.isNotBlank() }
         val index = indexState.value
-        val units = index.units.filter {
-            it.curriculumId == curriculum.id
-        }
+        val units = index.units.filter { it.curriculumId == curriculum?.id }
         val unitById = units.associateBy { it.id }
         val unitIds = unitById.keys
-
         val indexedLessons = index.lessons
-            .filter {
-                it.unitId in unitIds &&
-                    it.textContent.isNotBlank()
-            }
-            .sortedWith(
-                compareBy<LessonEntity>(
-                    { unitById[it.unitId]?.sortOrder ?: 0 },
-                    { it.sortOrder }
-                )
-            )
+            .filter { it.unitId in unitIds && it.textContent.isNotBlank() }
+            .sortedWith(compareBy<LessonEntity>(
+                { unitById[it.unitId]?.sortOrder ?: 0 }, { it.sortOrder }
+            ))
 
-        if (indexedLessons.isEmpty()) {
-            message.value = "أضف نص الدروس من فهرسة المنهج أولًا"
+        if (indexedLessons.isEmpty() && customSource == null) {
+            message.value = "الصق نص الدرس أو أضف نصوص الدروس في المكتبة"
             return
         }
-
-        val lessonContext = indexedLessons.joinToString(
+        val lessonContext = customSource ?: indexedLessons.joinToString(
             separator = "\n\n"
         ) { lesson ->
-            val unitTitle = unitById[lesson.unitId]?.title.orEmpty()
-            buildString {
-                append("الوحدة: ")
-                append(unitTitle)
-                append("\nالدرس: ")
-                append(lesson.title)
-                append("\n")
-                append(lesson.textContent)
-            }
+            "الوحدة: ${unitById[lesson.unitId]?.title.orEmpty()}\n" +
+                "الدرس: ${lesson.title}\n${lesson.textContent}"
         }.take(50_000)
 
         viewModelScope.launch {
@@ -442,7 +464,7 @@ class ExamGeneratorViewModel(
                 val generated = aiQuestionService.generateQuestions(
                     AiExamQuestionRequest(
                         subjectName = subject.name,
-                        curriculumTitle = curriculum.title,
+                        curriculumTitle = curriculum?.title ?: "نص الدرس",
                         lessonContext = lessonContext,
                         count = requestedCount,
                         types = state.selectedTypes.map {
@@ -458,7 +480,7 @@ class ExamGeneratorViewModel(
                     repository.addQuestion(
                         QuestionEntity(
                             subjectId = subject.id,
-                            curriculumId = curriculum.id,
+                            curriculumId = curriculum?.id,
                             questionType = item.type,
                             difficulty = item.difficulty,
                             questionText = item.question,
