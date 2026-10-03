@@ -5,8 +5,12 @@ import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
+import android.system.ErrnoException
+import android.system.OsConstants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.IOException
@@ -15,10 +19,6 @@ import java.util.UUID
 data class StoredPdf(val title: String, val absolutePath: String)
 
 class CurriculumFileStore(private val context: Context) {
-    companion object {
-        const val MAX_PDF_BYTES: Long = 80L * 1024L * 1024L
-    }
-
     private val curriculaDirectory: File
         get() = File(context.filesDir, "curricula").apply {
             if (!exists() && !mkdirs()) throw IOException("تعذر إنشاء مجلد المناهج")
@@ -26,11 +26,6 @@ class CurriculumFileStore(private val context: Context) {
 
     suspend fun importPdf(uri: Uri): StoredPdf = withContext(Dispatchers.IO) {
         val displayName = readDisplayName(uri)
-        val declaredSize = readDeclaredSize(uri)
-        require(declaredSize == null || declaredSize <= MAX_PDF_BYTES) {
-            "حجم الملف أكبر من 80 ميجابايت"
-        }
-
         val directory = curriculaDirectory
         val id = UUID.randomUUID().toString()
         val staging = File(directory, "$id.part")
@@ -50,15 +45,13 @@ class CurriculumFileStore(private val context: Context) {
 
                     staging.outputStream().buffered().use { destination ->
                         destination.write(header, 0, read)
-                        var copied = read.toLong()
-                        val buffer = ByteArray(32 * 1024)
+                        // Stream the entire document in fixed-size chunks; size is
+                        // limited only by available storage and Android/PDF support.
+                        val buffer = ByteArray(64 * 1024)
                         while (true) {
+                            currentCoroutineContext().ensureActive()
                             val count = input.read(buffer)
                             if (count < 0) break
-                            copied += count
-                            require(copied <= MAX_PDF_BYTES) {
-                                "حجم الملف أكبر من 80 ميجابايت"
-                            }
                             destination.write(buffer, 0, count)
                         }
                         destination.flush()
@@ -85,7 +78,12 @@ class CurriculumFileStore(private val context: Context) {
         } catch (e: SecurityException) {
             throw IOException("لا يوجد إذن لقراءة الملف المختار", e)
         } catch (e: IOException) {
-            throw IOException("فشل نسخ الملف. تحقق من مساحة التخزين وإمكانية قراءة الملف", e)
+            val diskFull = generateSequence<Throwable>(e) { it.cause }
+                .any { it is ErrnoException && it.errno == OsConstants.ENOSPC }
+            throw IOException(
+                if (diskFull) "مساحة التخزين غير كافية. وفر مساحة ثم أعد المحاولة"
+                else "فشل نسخ الملف. تحقق من مساحة التخزين وإمكانية قراءة الملف", e
+            )
         } finally {
             staging.delete()
         }
@@ -105,13 +103,4 @@ class CurriculumFileStore(private val context: Context) {
         }
     }.getOrNull().orEmpty().ifBlank { "منهج.pdf" }
 
-    private fun readDeclaredSize(uri: Uri): Long? = runCatching {
-        context.contentResolver.query(
-            uri, arrayOf(OpenableColumns.SIZE), null, null, null
-        )?.use { cursor ->
-            val column = cursor.getColumnIndex(OpenableColumns.SIZE)
-            if (column >= 0 && cursor.moveToFirst() && !cursor.isNull(column)) cursor.getLong(column)
-            else null
-        }
-    }.getOrNull()?.takeIf { it >= 0L }
 }
