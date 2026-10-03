@@ -37,10 +37,10 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
     var lessonText by rememberSaveable { mutableStateOf("") }
     var awaitingPdfGeneration by remember { mutableStateOf(false) }
     var step by remember{mutableIntStateOf(0)}
-    LaunchedEffect(state.generatedExam) {
-        if (awaitingPdfGeneration && state.generatedExam != null) {
+    LaunchedEffect(state.generatedExam, state.isAiGenerating) {
+        if (awaitingPdfGeneration && !state.isAiGenerating) {
+            if (state.generatedExam != null) step = 2
             awaitingPdfGeneration = false
-            step = 2
         }
     }
     var bank by remember{mutableStateOf(false)}
@@ -181,7 +181,7 @@ fun ExamStudio(onBack:()->Unit,onNavigate:(String)->Unit) {
                                 Modifier.fillMaxWidth(),
                                 icon = EduGlyph.SPARK,
                                 enabled = state.aiConfigured && !state.isAiGenerating &&
-                                    (state.questionCount.toIntOrNull() in 1..30)
+                                    (state.questionCount.toIntOrNull()?.let { it in 1..30 } == true)
                             ) {
                                 awaitingPdfGeneration = true
                                 vm.generateAiQuestionsFromPdf()
