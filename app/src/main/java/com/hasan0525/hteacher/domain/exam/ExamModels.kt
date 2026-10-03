@@ -43,5 +43,6 @@ data class GeneratedExam(
     val subjectName: String,
     val curriculumTitle: String?,
     val totalMarks: Int,
-    val questions: List<ExamQuestionItem>
+    val questions: List<ExamQuestionItem>,
+    val isTemplate: Boolean = false
 )
