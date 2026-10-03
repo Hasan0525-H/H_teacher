@@ -2,21 +2,11 @@ interface RateLimitBinding {
   limit(input: { key: string }): Promise<{ success: boolean }>;
 }
 
-interface WorkersAiBinding {
-  run(
-    model: string,
-    input: Record<string, unknown>
-  ): Promise<unknown>;
-}
-
 interface Env {
   AI_RATE_LIMITER: RateLimitBinding;
-  AI?: WorkersAiBinding;
 
   PROVIDER_ORDER?: string;
   PROVIDER_TIMEOUT_MS?: string;
-
-  CF_AI_MODEL?: string;
 
   GEMINI_API_KEY?: string;
   GEMINI_MODEL?: string;
@@ -24,8 +14,6 @@ interface Env {
   GROQ_API_KEY?: string;
   GROQ_MODEL?: string;
 
-  OPENROUTER_API_KEY?: string;
-  OPENROUTER_MODEL?: string;
 }
 
 type GenerateBody = {
@@ -120,7 +108,7 @@ export default {
 
     const providers = (
       env.PROVIDER_ORDER ||
-      "workers_ai,gemini,groq,openrouter"
+      "gemini,groq"
     )
       .split(",")
       .map(value => value.trim())
@@ -178,12 +166,6 @@ async function callProvider(
   env: Env
 ): Promise<ProviderResult | null> {
   switch (provider) {
-    case "workers_ai":
-      return callWorkersAi(
-        prompt,
-        maxOutputTokens,
-        env
-      );
     case "gemini":
       return callGemini(
         prompt,
@@ -200,53 +182,9 @@ async function callProvider(
         prompt,
         maxOutputTokens
       });
-    case "openrouter":
-      return callOpenAiCompatible({
-        provider: "openrouter",
-        endpoint:
-          "https://openrouter.ai/api/v1/chat/completions",
-        apiKey: env.OPENROUTER_API_KEY,
-        model: env.OPENROUTER_MODEL,
-        prompt,
-        maxOutputTokens
-      });
     default:
       return null;
   }
-}
-
-async function callWorkersAi(
-  prompt: string,
-  maxOutputTokens: number,
-  env: Env
-): Promise<ProviderResult | null> {
-  if (!env.AI || !env.CF_AI_MODEL) return null;
-
-  const raw = await env.AI.run(
-    env.CF_AI_MODEL,
-    {
-      messages: [
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      max_tokens: maxOutputTokens,
-      temperature: 0.3
-    }
-  ) as Record<string, unknown>;
-
-  const text = extractWorkersAiText(raw);
-
-  if (!text) {
-    throw new Error("empty_response");
-  }
-
-  return {
-    text,
-    provider: "workers_ai",
-    model: env.CF_AI_MODEL
-  };
 }
 
 async function callGemini(
@@ -360,28 +298,6 @@ async function callOpenAiCompatible(input: {
     provider: input.provider,
     model: input.model
   };
-}
-
-function extractWorkersAiText(
-  payload: Record<string, unknown>
-): string {
-  const response = payload?.response;
-  if (typeof response === "string") {
-    return response.trim();
-  }
-
-  const result = payload?.result as
-    | Record<string, unknown>
-    | undefined;
-
-  if (
-    result &&
-    typeof result.response === "string"
-  ) {
-    return result.response.trim();
-  }
-
-  return "";
 }
 
 async function readJson(
