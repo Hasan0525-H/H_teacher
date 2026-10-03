@@ -63,7 +63,7 @@ class CurriculumPdfImportTest {
             }
             assertTrue("Copied PDF missing", File(savedPath).exists())
             assertTrue("Copied PDF invalid", File(savedPath).inputStream().use {
-                it.readBytes().take(5).toByteArray().contentEquals("%PDF-".toByteArray())
+                ByteArray(5).let { header -> it.read(header) == 5 && header.contentEquals("%PDF-".toByteArray()) }
             })
 
             compose.activityRule.scenario.recreate()
@@ -92,16 +92,23 @@ class CurriculumPdfImportTest {
     }
 
     @Test
-    fun oversizedPdfIsRejectedBeforeCopy() {
+    fun pdfWithDeclaredSizeAboveOldLimitCanBeImported() {
+        // This provider intentionally advertises >80 MB metadata while serving a
+        // small, valid PDF. The importer must read the content, not reject metadata.
         val app = compose.activity.application as HTeacherApplication
-        val files = File(app.filesDir, "curricula")
-        val before = files.listFiles()?.map { it.name }?.toSet().orEmpty()
         val uri = Uri.parse("content://com.hasan0525.hteacher.testpdf/oversized_pdf.pdf")
-        val failure = runBlocking {
-            runCatching { CurriculumFileStore(app).importPdf(uri) }.exceptionOrNull()
+        val imported = runBlocking { CurriculumFileStore(app).importPdf(uri) }
+        val saved = File(imported.absolutePath)
+        try {
+            assertTrue("PDF must be imported despite inflated size metadata", saved.isFile)
+            assertTrue("Imported PDF must have a valid header", saved.inputStream().use { input ->
+                ByteArray(5).let { header ->
+                    input.read(header) == 5 && header.contentEquals("%PDF-".toByteArray())
+                }
+            })
+        } finally {
+            saved.delete()
         }
-        assertTrue("Oversized PDF must be rejected", failure is IllegalArgumentException)
-        assertTrue("Oversized PDF left a copied file", files.listFiles()?.map { it.name }?.toSet().orEmpty() == before)
     }
 
 }
