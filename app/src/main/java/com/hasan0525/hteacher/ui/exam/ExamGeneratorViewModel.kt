@@ -50,6 +50,7 @@ data class ExamGeneratorUiState(
     val isAiGenerating: Boolean = false,
     val aiConfigured: Boolean = false,
     val indexedLessonCount: Int = 0,
+    val matchingQuestionCount: Int = 0,
     val message: String? = null
 )
 
@@ -180,6 +181,11 @@ class ExamGeneratorViewModel(
             isAiGenerating = aux.isAiGenerating,
             aiConfigured = aiQuestionService.isConfigured,
             indexedLessonCount = indexedLessonCount,
+            matchingQuestionCount = core.questions.count { question ->
+                QuestionType.fromStorage(question.questionType) in core.config.selectedTypes &&
+                    (core.config.selectedDifficulty == null ||
+                        Difficulty.fromStorage(question.difficulty) == core.config.selectedDifficulty)
+            },
             message = aux.message
         )
     }.stateIn(
@@ -288,14 +294,14 @@ class ExamGeneratorViewModel(
         }
     }
 
-    fun generateExam() {
+    fun generateExam(): Boolean {
         val state = uiState.value
         val subject = state.subjects
             .firstOrNull { it.id == state.selectedSubjectId }
 
         if (subject == null) {
             message.value = "أضف مادة واخترها أولًا"
-            return
+            return false
         }
 
         val requestedCount = state.questionCount.toIntOrNull()
@@ -303,12 +309,12 @@ class ExamGeneratorViewModel(
 
         if (requestedCount == null || requestedCount !in 1..100) {
             message.value = "عدد الأسئلة يجب أن يكون بين 1 و100"
-            return
+            return false
         }
 
         if (marks == null || marks !in 1..500) {
             message.value = "الدرجة الكلية يجب أن تكون بين 1 و500"
-            return
+            return false
         }
 
         val candidates = state.questions.filter { question ->
@@ -320,8 +326,12 @@ class ExamGeneratorViewModel(
         }
 
         if (candidates.isEmpty()) {
-            message.value = "لا توجد أسئلة مطابقة للإعدادات الحالية"
-            return
+            message.value = if (state.questions.isEmpty()) {
+                "لا توجد أسئلة لهذه المادة. أضف سؤالًا أو أنشئ أسئلة بالذكاء الاصطناعي."
+            } else {
+                "لا توجد أسئلة مطابقة. غيّر النوع أو المستوى، أو أضف سؤالًا."
+            }
+            return false
         }
 
         val selected = selectBalancedQuestions(
@@ -360,6 +370,7 @@ class ExamGeneratorViewModel(
         } else {
             "تم إنشاء الاختبار"
         }
+        return true
     }
 
     fun generateAiQuestions() {
