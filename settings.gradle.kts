@@ -22,3 +22,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "HTeacher"
 include(":app")
+include(":shared")
+include(":desktopApp")
