@@ -12,5 +12,16 @@ dependencies {
 compose.desktop {
     application {
         mainClass = "com.hasan0525.hteacher.MainKt"
+
+        nativeDistributions {
+            targetFormats(
+                org.jetbrains.compose.desktop.application.dsl.TargetFormat.Exe,
+                org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi
+            )
+            packageName = "HTeacher"
+            packageVersion = "0.1.0"
+            description = "المعلم H - Windows"
+            vendor = "Hasan0525-H"
+        }
     }
 }
