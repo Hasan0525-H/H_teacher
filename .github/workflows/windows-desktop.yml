@@ -21,5 +21,17 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Build desktop
-        run: .\gradlew.bat :desktopApp:build
+      - name: Test shared module
+        run: .\gradlew.bat :shared:test
+
+      - name: Build Android debug
+        run: .\gradlew.bat :app:assembleDebug
+
+      - name: Package Windows application
+        run: .\gradlew.bat :desktopApp:packageExe
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HTeacher-Windows
+          path: desktopApp/build/compose/binaries/**/*.exe
