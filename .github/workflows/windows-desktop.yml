@@ -1,0 +1,25 @@
+name: Windows Desktop Build
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'desktopApp/**'
+      - 'shared/**'
+      - '.github/workflows/windows-desktop.yml'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build desktop
+        run: .\gradlew.bat :desktopApp:build
