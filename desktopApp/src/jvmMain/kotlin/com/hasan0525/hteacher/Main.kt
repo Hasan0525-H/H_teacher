@@ -9,7 +9,7 @@ import androidx.compose.ui.window.application
 fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
-        title = "المعلم H"
+        title = "المعلم H - Windows"
     ) {
         DesktopApp()
     }
@@ -18,6 +18,6 @@ fun main() = application {
 @Composable
 private fun DesktopApp() {
     MaterialTheme {
-        Text("المعلم H - Windows")
+        Text("المعلم H - نسخة ويندوز التجريبية")
     }
 }
