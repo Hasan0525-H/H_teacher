@@ -1,10 +1,18 @@
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
+    id("com.android.kotlin.multiplatform.library")
 }
 
 kotlin {
+    android {
+        namespace = "com.hasan0525.hteacher.shared"
+        compileSdk = 36
+        minSdk = 26
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
+    }
     jvm()
-    androidTarget()
 
     sourceSets {
         val commonMain by getting

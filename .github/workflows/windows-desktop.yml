@@ -21,14 +21,19 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+
       - name: Test shared module
-        run: .\gradlew.bat :shared:test
+        run: gradle :shared:test --stacktrace
 
       - name: Build Android debug
-        run: .\gradlew.bat :app:assembleDebug
+        run: gradle :app:assembleDebug --stacktrace
 
       - name: Package Windows application
-        run: .\gradlew.bat :desktopApp:packageExe
+        run: gradle :desktopApp:packageExe --stacktrace
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
